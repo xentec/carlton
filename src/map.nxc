@@ -19,7 +19,7 @@
 
 static char map[MAP_SIZE];
 
-char mapGetCell(int x, int y)
+char mapGetCellXY(int x, int y)
 {
 	if(-1 < y && y < MAP_STRIDE  &&  -1 < x && x < MAP_STRIDE)
 		return map[y * MAP_STRIDE + x];
@@ -32,7 +32,13 @@ char mapGetCell(int x, int y)
 	}
 }
 
-void mapSetCell(int x, int y, char data)
+inline 
+char mapGetCell(const Vector& v) 
+{
+	return mapGetCellXY(v.x, v.y);
+}
+
+void mapSetCellXY(int x, int y, char data)
 {
 	if(-1 < y && y < MAP_STRIDE  &&  -1 < x && x < MAP_STRIDE)
 		map[y * MAP_STRIDE + x] = data;
@@ -42,6 +48,11 @@ void mapSetCell(int x, int y, char data)
 		v.y = y;
 		logError("setCell", vecToString(v));
 	}
+}
+
+void mapSetCell(const Vector& v, char data)
+{
+	mapSetCellXY(v.x, v.y, data);
 }
 
 bool mapIsObstacle(char c)

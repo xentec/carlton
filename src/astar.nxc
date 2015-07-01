@@ -58,7 +58,7 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
 
 	Vector current;
 	bool found = false;
-	char goalCell = mapGetCell(goal.x, goal.y);
+	char goalCell = mapGetCell(goal);
 
 	ArrayInit(steps, 0, MAP_SIZE);
 	ArrayInit(costs, 0, MAP_SIZE);
@@ -77,7 +77,7 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
 		// found our goal? then let's make a break
 		//if(vecEq(current, goal)) 
 		// don't care too much about the location but more about the contents
-		if(goalCell == mapGetCell(current.x, current.y))
+		if(goalCell == mapGetCell(current))
 		{
 			logDebug("FOUND");
 			found = true;
@@ -88,7 +88,7 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
 		for(int i = 0; i < 4; i++)
 		{
 			Vector next = vecAdd(current, vecDIRS[i]);
-			char cell = mapGetCell(next.x, next.y); // look at what's there
+			char cell = mapGetCell(next); // look at what's there
 
 			if(mapIsObstacle(cell)) // ignore unpassable nodes
 				continue;
