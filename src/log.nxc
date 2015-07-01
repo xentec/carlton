@@ -1,18 +1,18 @@
 #ifndef LOG_INC
 #define LOG_INC
 
-#ifdef LOG_DEBUG
+#ifdef DEBUG
 	#define logDebug(str) logLine(str)
 #else
 	#define logDebug(str)
 #endif
 
 
-#define FIRST_LINE 6
+#define FIRST_LINE 8
 
 #define SYMBOL_HEIGHT LCD_LINE7
 
-static string _errLines[6];
+static string _errLines[FIRST_LINE];
 static int _errLineNum = 0;
 
 mutex logMutex;
@@ -36,7 +36,7 @@ void logLine(const string& line)
 	}
 	Release(logMutex);
 
-	if(_errLineNum < 5)
+	if(_errLineNum < FIRST_LINE-1)
 		_errLineNum++;
 }
 
