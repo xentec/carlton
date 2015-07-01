@@ -1,0 +1,71 @@
+// Timers
+
+typedef byte Timer;
+
+mutex timerMutex;
+
+struct _tmr {
+	Event event;
+	bool repeating, done;
+	unsigned long dur, end;
+};
+_tmr timers[];
+
+task timerTask();
+
+void timerInit(unsigned int count)
+{
+	ArrayInit(timers, NULL, count);
+	//StartTask(timerTask);
+}
+
+void timerSet(Timer t, int duration, Event event, bool repeating = false)
+{
+	timers[t].dur = duration;
+	timers[t].event = event;
+	timers[t].repeating = repeating;
+}
+
+void timerStart(Timer timer)
+{
+	timers[timer].end = CurrentTick()+timers[timer].dur;
+}
+
+void timerCancel(Timer timer)
+{
+	timers[timer].end = 0;
+}
+
+unsigned long timerRemaining(Timer t)
+{
+	long time = timers[t].end - CurrentTick();
+	return  time > 0 ? time : 0;
+}
+
+void timerTick()
+{
+	for(int i = 0; i < ArrayLen(timers); i++)
+	{
+		if(timers[i].end != 0 
+		&& timers[i].end <= CurrentTick()) 
+		{
+			eventSet(timers[i].event);
+
+			if(timers[i].repeating)
+				timerStart(i);
+			else
+				timerCancel(i);
+		}
+	}
+}
+
+
+task timerTask()
+{
+	do {
+		Acquire(timerMutex);
+		timerTick();
+		Release(timerMutex);
+		Wait(20);
+	} while(1);
+}

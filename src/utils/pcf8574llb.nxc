@@ -1,0 +1,218 @@
+/*************************************************************/
+/*                                                           */
+/*                     PCF8574Driver for NXC                 */
+/*                                                           */
+/*                 Programmed by: Adam Mokanszki             */
+/*                                                           */
+/*                 University of Debrecen Hungary            */
+/*                                                           */
+/*                            ENJOY! :)     FUCK U                 */
+/*                                                           */
+/*************************************************************/
+#ifndef _PCF8574_
+#define _PCF8574_
+
+#define  PCF8574ID  0x40    //The address of your PCF8574
+#define  PCF8574Port  S2   //This is the port on the NXT where the device is connected
+
+void WritePort(char input);  //Writing a single port the input is the port number 1-8
+void DeletePort(char input); //Deleting a single port the input is the port number 1-8
+void WritePorts(byte input); //Writing all ports with one byte
+int ReadPort(char input);    //Reading a single port the input is the port number 1-8 returning with a logical value in integer: 0,1
+int ReadPorts();             //Reading all ports returning with one byte
+                             //That's all what you need to know about this file
+
+void WritePort(char input){
+
+    byte cnt = 0x02;
+    byte I2CMsg[];
+    byte inbuf[];
+    byte Address = PCF8574ID;
+    byte nByteReady = 0;
+    int  result = -1;
+    int loop;
+    
+    ArrayBuild(I2CMsg, Address);
+
+    Wait(8);
+
+    while (loop == STAT_COMM_PENDING) {
+
+          loop = I2CStatus(PCF8574Port, nByteReady);
+
+    }
+
+    if (I2CBytes(PCF8574Port, I2CMsg, cnt, inbuf)) {
+
+        result = inbuf[1];
+
+    }
+
+    byte Command = result | (1<<(input-1));
+
+    ArrayBuild(I2CMsg, Address, Command);
+
+    while (loop == STAT_COMM_PENDING) {
+        loop = I2CStatus(PCF8574Port, nByteReady);
+    }
+
+    I2CWrite(PCF8574Port, 1, I2CMsg);
+
+    while (loop == STAT_COMM_PENDING) {
+
+        loop = I2CStatus(PCF8574Port, nByteReady);
+
+    }
+}
+
+void DeletePort(char input){
+
+    byte cnt = 0x02;
+    byte I2CMsg[];
+    byte inbuf[];
+    byte Address = PCF8574ID;
+    byte nByteReady = 0;
+    int  result = -1;
+    int loop;
+
+    ArrayBuild(I2CMsg, Address);
+
+    Wait(8);
+
+    while (loop == STAT_COMM_PENDING) {
+
+          loop = I2CStatus(PCF8574Port, nByteReady);
+
+    }
+
+    if (I2CBytes(PCF8574Port, I2CMsg, cnt, inbuf)) {
+
+        result = inbuf[1];
+
+    }
+
+    byte Command = result ^ (1<<(input-1));
+
+    ArrayBuild(I2CMsg, Address, Command);
+
+    while (loop == STAT_COMM_PENDING) {
+
+        loop = I2CStatus(PCF8574Port, nByteReady);
+
+    }
+
+    I2CWrite(PCF8574Port, 1, I2CMsg);
+
+    while (loop == STAT_COMM_PENDING) {
+
+        loop = I2CStatus(PCF8574Port, nByteReady);
+
+    }
+
+}
+
+void WritePorts(byte input){
+
+    byte I2CMsg[];
+    byte Address = PCF8574ID;
+    byte Command = input;
+    byte nByteReady = 0;
+    int loop;
+    
+    ArrayBuild(I2CMsg, Address, Command);
+
+    while (loop == STAT_COMM_PENDING) {
+
+        loop = I2CStatus(PCF8574Port, nByteReady);
+
+    }
+
+    I2CWrite(PCF8574Port, 1, I2CMsg);
+
+    while (loop == STAT_COMM_PENDING) {
+
+        loop = I2CStatus(PCF8574Port, nByteReady);
+
+    }
+}
+
+int ReadPort(char input){
+
+    byte cnt = 0x02;
+    byte I2CMsg[];
+    byte inbuf[];
+    byte Address = PCF8574ID;
+    byte nByteReady = 0;
+    int  result = -1;
+    int loop;
+
+    ArrayBuild(I2CMsg, Address);
+    Wait(8);
+    while (loop == STAT_COMM_PENDING) {
+
+          loop = I2CStatus(PCF8574Port, nByteReady);
+
+    }
+
+    if (I2CBytes(PCF8574Port, I2CMsg, cnt, inbuf)) {
+
+        result = inbuf[1];
+
+    }
+
+    if( result == (result | (1<<input-1)) ){
+
+       result = 1;
+
+    }
+    else{
+
+       result = 0;
+
+    }
+    
+    if(result==-1){
+
+     TextOut(0, LCD_LINE7, "Error: Check the");
+     TextOut(0, LCD_LINE8, "   connection!");
+     Wait(500);
+     ClearScreen();
+    }
+    return result;
+}
+
+int ReadPorts(){
+
+    byte cnt = 0x02;
+    byte I2CMsg[];
+    byte inbuf[];
+    byte Address = PCF8574ID;
+    byte nByteReady = 0;
+    int  result = -1;
+    int loop;
+
+    ArrayBuild(I2CMsg, Address);
+
+    Wait(8);
+
+    while (loop == STAT_COMM_PENDING) {
+
+          loop = I2CStatus(PCF8574Port, nByteReady);
+
+    }
+
+    if (I2CBytes(PCF8574Port, I2CMsg, cnt, inbuf)) {
+
+        result = inbuf[1];
+
+    }
+    if(result==-1){
+
+     TextOut(0, LCD_LINE7, "Error: Check the");
+     TextOut(0, LCD_LINE8, "   connection!");
+     Wait(500);
+     ClearScreen();
+    }
+    return result;
+}
+#endif

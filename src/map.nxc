@@ -1,0 +1,65 @@
+#ifndef MAP_INC
+#define MAP_INC
+
+#include "log.nxc"
+#include "vector.nxc"
+
+
+#define MAP_STRIDE  14
+#define MAP_SIZE    MAP_STRIDE*MAP_STRIDE
+
+#define MAP_STRIDE_WB MAP_STRIDE-2
+#define MAP_SIZE_WB MAP_STRIDE_WB*MAP_STRIDE_WB
+
+#define MAP_FREE   ' '
+#define MAP_WALL   '#'
+#define MAP_START  'S'
+#define MAP_BOT    'B'
+#define MAP_ERR    '?'
+
+static char map[MAP_SIZE];
+
+char mapGetCell(int x, int y)
+{
+	if(-1 < y && y < MAP_STRIDE  &&  -1 < x && x < MAP_STRIDE)
+		return map[y * MAP_STRIDE + x];
+	else {
+		Vector v;
+		v.x = x;
+		v.y = y;
+		logError("getCell", vecToString(v));
+		return MAP_ERR;
+	}
+}
+
+void mapSetCell(int x, int y, char data)
+{
+	if(-1 < y && y < MAP_STRIDE  &&  -1 < x && x < MAP_STRIDE)
+		map[y * MAP_STRIDE + x] = data;
+	else{
+		Vector v;
+		v.x = x;
+		v.y = y;
+		logError("setCell", vecToString(v));
+	}
+}
+
+bool mapIsObstacle(char c)
+{
+//	char c = mapGetCell(x,y);
+	switch(c) {
+//	case MAP_FREE:
+	case MAP_WALL:
+		return true;
+	default:
+	}
+
+	return false;
+}
+
+char mapGetCellCost(char c)
+{
+	return 1;
+}
+
+#endif // MAP_INC

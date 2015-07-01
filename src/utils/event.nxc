@@ -1,0 +1,28 @@
+// Events
+
+typedef byte Event;
+
+static unsigned short _eventState = 0;
+static byte _eventMax = 16;
+mutex eventMutex;
+
+safecall
+void eventSet(Event ev) 
+{
+	if(ev < _eventMax)
+		_eventState |= (1 << ev);
+}
+
+safecall
+bool eventIsPresent(Event ev) 
+{
+	unsigned short s = _eventState << (_eventMax-1 - ev);
+	return s >> (_eventMax-1);
+}
+
+safecall
+void eventClear(Event ev) 
+{
+	if(ev < _eventMax)
+		_eventState ^= (0 ^ _eventState) & (1 << ev);
+}

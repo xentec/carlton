@@ -1,0 +1,172 @@
+
+
+#include "log.nxc"
+#include "vector.nxc"
+#include "map.nxc"
+#include "astar.nxc"
+
+
+#define MAP_FILE    "map.txt"
+#define TASK_FILE   "task.txt"
+
+#download "../data/map.txt"
+#download "../data/task.txt"
+
+#define TASK_TABLE_LENGTH 2
+
+#define BOT_START_DIR vecUP
+
+
+struct Color
+{
+	byte r,g,b;
+};
+
+struct Table
+{
+	bool allocated;
+	Vector pos[2];
+	Color  col;
+};
+
+
+struct Bot
+{
+	Vector pos;
+	Vector dir;
+
+	Vector begin;
+};
+
+Bot bot;
+Table table[3];
+
+
+void botInit(Bot& bot)
+{
+	bot.dir = BOT_START_DIR;
+	bot.pos = vecNULL;
+}
+
+void botMove(int distance, byte power) {}
+void botRotate(int degree, byte power) {}
+
+
+
+// #########################################
+
+void loadMap(string fileName, Bot& bot, Table& table[])
+{
+	byte fileHandle;
+	byte err;
+	byte _0;
+
+	char cur;
+	Vector v, p;
+
+	err = OpenFileRead(fileName, _0, fileHandle);
+	if(err) {
+		logFatal("mapOpen", FormatVal("%04X", err));
+		return;
+	}
+
+	for(int i = 0; i < MAP_SIZE; i++)
+	{
+		err = Read(fileHandle, cur);
+		if(err) {
+			logFatal("mapRead", StrCat(FormatVal("%04X", err), " i:", FormatVal("%d", i)));
+			break;
+		}
+
+		map[i] = cur;
+		switch(cur)
+		{
+			case MAP_START:
+				v.x = i % MAP_STRIDE;
+				v.y = i / MAP_STRIDE;
+				bot.begin = v;
+				logDebug(StrCat("BOT:", vecToString(v)));
+				break;
+			default:
+		}
+
+		if('1' <= cur && cur <= '9')
+		{
+			Table t = table[cur - '1'];
+
+			v.x = i % MAP_STRIDE;
+			v.y = i / MAP_STRIDE;
+
+			if(!t.allocated) {
+				ArrayInit(t.pos, 0, TASK_TABLE_LENGTH);
+				t.allocated = true;
+
+				logDebug(StrCat("TBL", Flatten(cur),":", vecToString(v)));
+
+				t.pos[0] = v;
+			} else
+				t.pos[1] = v;	
+
+			table[cur - '1'] = t;
+		}
+	}
+	CloseFile(fileHandle);
+}
+
+
+
+task main() 
+{
+	botInit(bot);
+
+	loadMap(MAP_FILE, bot, table);
+
+	Table t = table[1];
+	Table t2 = table[2];
+	Vector path[];
+
+
+	logInfo("Suche Pfad..");
+	int a = Astar(t.pos[0], t2.pos[0], path);
+	if(a)
+		logLineAppend("   V");
+	else
+		logLineAppend("   X");
+
+
+	for(int i = 0; i < a; i++) {
+		logInfo(vecToString(path[i]));
+		Wait(200);
+	}
+
+	byte taskHandle;
+	byte err;
+	byte _0;
+
+	char cur;
+	Vector v;
+	
+	err = OpenFileRead(TASK_FILE, _0, taskHandle);
+	while(!err)
+	{
+		err = Read(taskHandle, cur);
+		if(err)
+			break;
+
+	}
+}
+
+int parseNumber(const string& str, unsigned int& num)
+{
+	int pos = num = 0;
+	// Suche letzte Ziffer
+	while(str[pos] >= '0' && str[pos] <= '9') 
+		pos++;
+
+	// Baue aus Ziffern eine Dezimalzahl
+	for (int i = pos-1, b = 1; i >= 0; i--, b*=10)
+		num += (str[i] - '0') * b;
+
+	return pos;
+}
+

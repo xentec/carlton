@@ -1,0 +1,167 @@
+#pragma once
+
+#include "log.nxc"
+
+#include "map.nxc"
+#include "queue.nxc"
+#include "vector.nxc"
+
+int getCost(const int& arr[], const Vector& v)
+{
+	if(-1 < v.y && v.y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
+		return arr[v.y * MAP_STRIDE + v.x];
+	else {
+		logFatal("getCost", vecToString(v));
+		return -1;
+	}
+}
+
+void setCost(int& arr[], const Vector& v, int data)
+{
+	if(-1 < v.y && v.y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
+		arr[v.y * MAP_STRIDE + v.x] = data;
+	else
+		logFatal("setCost", vecToString(v));
+}
+
+Vector getStep(const Vector& arr[], const Vector& v)
+{
+	if(-1 < v.y && v.y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
+		return arr[v.y * MAP_STRIDE + v.x];
+	else {
+		logFatal("getStep", vecToString(v));
+		return vecNULL;
+	}
+}
+
+void setStep(Vector& arr[], const Vector& v, const Vector& data)
+{
+	if(-1 < v.y && v.y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE) {
+		arr[v.y * MAP_STRIDE + v.x] = data;
+	} else {
+		logFatal("setStep", vecToString(v));
+	}
+}
+
+
+int heuristic(const Vector& goal, const Vector& next)
+{
+	return abs(goal.x-next.x)+abs(goal.y-next.y);
+}
+
+
+int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
+{
+	Vector  steps[];
+	int     costs[];
+	Queue   pq;
+
+	Vector current;
+
+	bool found = false;
+
+	ArrayInit(steps, 0, MAP_SIZE_WB);
+	ArrayInit(costs, 0, MAP_SIZE_WB);
+	queueInit(pq, MAP_SIZE_WB);
+
+	// start with priority, no way back and with no cost
+	queuePush(pq, 0, startPos);
+	setStep(steps, startPos, vecNULL);
+	setCost(costs, startPos, 0);
+
+	// execute A*
+	while(queueSize(pq)) 
+	{
+		current = queuePop(pq);
+
+		// found our goal? then let's make a break
+		if(vecEq(current, goal)) {
+			logDebug(StrCat("FOUND: ", vecToString(current)));
+			found = true;
+			break;
+		}
+
+		// look in our 4 directions
+		for(int i = 0; i < 4; i++)
+		{
+			Vector next = vecAdd(current, vecDIRS[i]);
+			char cell = mapGetCell(next.x, next.y); // look at what's there
+
+			if(mapIsObstacle(cell)) // ignore unpassable nodes
+				continue;
+
+			int newCost = getCost(costs, current) + mapGetCellCost(cell);
+			int oldCost = getCost(costs, next);
+
+			// go there only if:
+			// - it was not visited yet OR
+			// - all other ways are (or have become) too expensive
+			if(!oldCost || oldCost > newCost)
+			{
+				int pri = newCost + heuristic(goal, next);
+
+				queuePush(pq, pri, next);
+				setStep(steps, next, current);
+				setCost(costs, next, newCost);
+			}
+		}
+	}
+
+	// what a disappointment
+	if(!found)
+		return 0;
+
+	// maximum possible path lenght is half of a borderless map + half a stride
+	int size = (MAP_SIZE_WB + MAP_STRIDE_WB)/2;
+
+	// now time for path construstion through backtracking the steps from goal
+	int pIdx = 0;
+	Vector tmpPath[];
+	ArrayInit(tmpPath, 0, size);
+
+	tmpPath[0] = goal;
+
+	// ...with a litte optimization
+	/*
+	
+	We combine vectors in a line and store only significant points.
+	By doing so we reduce path[] size and can use the distance between 
+	those points for smoother movement.
+
+	+ = step
+	##############    ##############
+	#   +++++++++#    #   +-------+#
+	## ++#######+# -> ## ++#######|#
+	#G++   # S+++#    #G-+   # S--+#
+	##############    ##############
+
+
+	*/
+	while(!vecEq(tmpPath[pIdx], startPos))
+	{
+		Vector curr = tmpPath[pIdx];
+		Vector prev = getStep(steps, curr);
+		
+		if(prev.x != curr.x && prev.y != curr.y)
+			pIdx++;
+		
+		tmpPath[pIdx+1] = prev;
+	}
+
+	// reverse the reversed path
+	size = pIdx+1;
+	ArrayInit(path, 0, size);
+
+	for(int i = pIdx; i > -1; i--)
+	{
+		path[pIdx-i] = tmpPath[i];
+	}
+
+	// clean up (?)
+	ArrayInit(steps, 0, 0);
+	ArrayInit(costs, 0, 0);
+	queueDestroy(pq);
+
+
+	return size;
+}

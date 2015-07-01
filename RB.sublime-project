@@ -1,0 +1,24 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],	
+	"build_systems":
+	[
+		{
+			"cmd": 
+			[ 
+				//"cp ${file} /tmp/${file_base_name}.UW.nxc && sudo $project_path/nbc -ER=2 -EF -T=NXT -S=usb /tmp/${file_base_name}.UW.nxc",
+				"cp ${file} /tmp/${file_base_name}.UW.nxc && sudo $project_path/nbc -ER=2 -EF -T=NXT -S=usb -d /tmp/${file_base_name}.UW.nxc",
+			],
+			"shell": "true",
+			"file_regex": "nxc$",
+			"name": "NXC",
+			"selector": "source.C",
+			"working_dir": "${file_path}"
+		}
+	],
+	
+}

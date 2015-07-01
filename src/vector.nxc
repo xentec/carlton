@@ -1,0 +1,107 @@
+#ifndef VECTOR_INC
+#define VECTOR_INC
+
+
+#define VEC_TYPE int
+
+struct Vector 
+{
+	VEC_TYPE x,y;
+};
+
+static const Vector vecNULL = {0, 0};
+static const Vector vecDIRS[] = { {0, -1}, {-1, 0}, {0, 1}, {1, 0} };
+
+#define vecUP vecDIRS[0]
+#define vecLEFT vecDIRS[1]
+#define vecDOWN vecDIRS[2]
+#define vecRIGHT vecDIRS[3]
+
+inline
+Vector vecNew(VEC_TYPE x, VEC_TYPE y)
+{
+	Vector v;
+	v.x = x;
+	v.y = y;
+	return v;
+}
+
+
+string vecToString(const Vector& v)
+{
+	return StrCat(FormatVal("%d", v.x), ";", FormatVal("%d", v.y));
+}
+
+string vecToStringP(const Vector& v)
+{
+	return StrCat("{", vecToString(v),"}");
+}
+
+inline
+int vecLengthSquared(const Vector& v)
+{
+	return v.x*v.x - v.y*v.y;
+}
+
+float vecLength(const Vector& v)
+{
+	if(v.x == 0)
+		return v.y;
+	if(v.y == 0)
+		return v.x;
+
+	return sqrt(vecLengthSquared(v)); // NXC
+//	return sqrt(cast(float)vecLengthSquared(v));
+}
+
+int vecCmp(const Vector& a, const Vector& b)
+{
+	if(a.x == b.x && a.y == b.y)
+		return 0;
+	
+	return vecLengthSquared(a) > vecLengthSquared(b) ? -1 : 1;
+}
+
+inline
+bool vecEq(const Vector& a, const Vector& b)
+{
+	return !vecCmp(a, b);
+}
+
+inline
+bool vecIsNull(const Vector& v)
+{
+	return vecEq(v, vecNULL);
+}
+
+Vector vecAdd(const Vector& a, const Vector& b)
+{
+	Vector v;
+	v.x = a.x + b.x;
+	v.y = a.y + b.y;
+	return v;
+}
+
+inline
+void vecAddIp(Vector& v, const Vector& b)
+{
+	v.x += b.x;
+	v.y += b.y;
+}
+
+Vector vecSub(const Vector& a, const Vector& b)
+{
+	Vector v;
+	v.x = a.x - b.x;
+	v.y = a.y - b.y;
+	return v;
+}
+
+inline
+void vecSubIp(Vector& v, const Vector& b)
+{
+	v.x -= b.x;
+	v.y -= b.y;
+}
+
+#endif // VECTOR_INC

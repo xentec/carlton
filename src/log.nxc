@@ -1,0 +1,74 @@
+#ifndef LOG_INC
+#define LOG_INC
+
+#ifdef LOG_DEBUG
+	#define logDebug(str) logLine(str)
+#else
+	#define logDebug(str)
+#endif
+
+
+#define FIRST_LINE 6
+
+#define SYMBOL_HEIGHT LCD_LINE7
+
+static string _errLines[6];
+static int _errLineNum = 0;
+
+mutex logMutex;
+
+void logLine(const string& line)
+{
+	for(int i = _errLineNum; i > 0; i--)
+	{
+		_errLines[i] = _errLines[i-1];
+	}
+
+	_errLines[0] = line;
+
+	int l;
+	Acquire(logMutex);
+	for(int i = 0; i < FIRST_LINE; i++) 
+	{
+		l = (8-FIRST_LINE + i)*SYMBOL_HEIGHT;
+		ClearLine(l);
+		TextOut(0, l, _errLines[i]);
+	}
+	Release(logMutex);
+
+	if(_errLineNum < 5)
+		_errLineNum++;
+}
+
+void logLineAppend(const string& msg)
+{
+	_errLines[0] = StrCat(_errLines[0], msg);
+
+	Acquire(logMutex);
+	TextOut(0, (8-FIRST_LINE)*SYMBOL_HEIGHT, _errLines[0]);
+	Release(logMutex);
+}
+
+inline
+void logInfo(const string& msg)
+{
+	logLine(msg);
+}
+
+inline
+void logError(const string& head, const string& msg)
+{
+	logLine(StrCat("ERR:", head));
+	logLine(msg);
+}
+
+void logFatal(const string& head, const string& msg)
+{
+	logLine(StrCat("HLT:", head));
+	logLine(msg);
+	while(1) {}
+}
+
+
+
+#endif // LOG_INC

@@ -1,0 +1,123 @@
+#include "vector.nxc"
+
+typedef Vector QueueData;
+
+struct QueueItem
+{
+	QueueData data;
+	int pri;
+};
+
+struct Queue
+{
+	QueueItem list[];
+	int count;
+	int allocated;
+};
+
+void queueInit(Queue& q, int size)
+{
+	QueueItem qi;
+
+	ArrayInit(q.list, qi, size);
+	q.count = 1;
+	q.allocated = size;
+}
+
+inline
+int queueSize(Queue& q)
+{
+	return q.count - 1;
+}
+
+inline 
+int queueCapacity(Queue& q)
+{
+	return q.allocated - 1;
+}
+
+void queueResize(Queue& q, int new_size)
+{
+	QueueItem newList[];
+
+	QueueItem qi;
+	ArrayInit(newList, qi, new_size);
+
+	for(int i = 1; i < q.count; i++)
+		newList[i] = q.list[i];
+
+	ArrayInit(q.list, qi, 0);
+
+	q.allocated = new_size;
+	q.list = newList;
+}
+
+void queuePush(Queue& q, int pri, QueueData& data)
+{
+	int parent;
+	int idx;
+
+	if(q.count == q.allocated) {
+		return;
+	}
+
+	idx = q.count++;
+
+	while (1) 
+	{
+		parent = idx >> 1; // [.....p....i], [..p..i.....]
+
+		// Swap parent and child nodes until we've found 
+		// our place in the heap: parent < data < childs
+
+		if(!parent || q.list[parent].pri < pri) // [.....<.....], [..<..i.....]
+			break;
+
+		q.list[idx] = q.list[parent]; // [.....^....v], [..^..v.....]
+		idx = parent;
+	}
+
+	q.list[idx].data = data;
+	q.list[idx].pri = pri;
+}
+
+QueueData queuePop(Queue& q)
+{
+	QueueData res;
+	res = q.list[1].data;
+
+	--q.count;
+
+	int idx = 1, parent;
+	while (1) {
+		parent = 2 * idx;
+
+		if(parent > q.count)
+			break;
+
+		if (parent + 1 < q.count && q.list[parent].pri > q.list[parent + 1].pri) 
+			parent++;
+
+		if (q.list[q.count].pri <= q.list[parent].pri) 
+			break;
+
+		q.list[idx] = q.list[parent];
+		idx = parent;
+	}
+
+	q.list[idx] = q.list[q.count];
+//	q.list[q.count] = QueueItem(); // NXC // optional
+	q.list[q.count] = 0; // NXC // optional
+	return res;
+}
+
+QueueData queueTop(Queue& q)
+{
+  return q.list[1].data;
+}
+
+void queueDestroy(Queue& q)
+{
+	QueueItem qi;
+	ArrayInit(q.list, qi, 0);
+}
