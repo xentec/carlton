@@ -57,12 +57,12 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
 	Queue   pq;
 
 	Vector current;
-
 	bool found = false;
+	char goalCell = mapGetCell(goal.x, goal.y);
 
-	ArrayInit(steps, 0, MAP_SIZE_WB);
-	ArrayInit(costs, 0, MAP_SIZE_WB);
-	queueInit(pq, MAP_SIZE_WB);
+	ArrayInit(steps, 0, MAP_SIZE);
+	ArrayInit(costs, 0, MAP_SIZE);
+	queueInit(pq, MAP_SIZE);
 
 	// start with priority, no way back and with no cost
 	queuePush(pq, 0, startPos);
@@ -75,8 +75,11 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
 		current = queuePop(pq);
 
 		// found our goal? then let's make a break
-		if(vecEq(current, goal)) {
-			logDebug(StrCat("FOUND: ", vecToString(current)));
+		//if(vecEq(current, goal)) 
+		// don't care too much about the location but more about the contents
+		if(goalCell == mapGetCell(current.x, current.y))
+		{
+			logDebug("FOUND");
 			found = true;
 			break;
 		}
@@ -108,54 +111,54 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
 	}
 
 	// what a disappointment
-	if(!found)
+	if(!found) {
 		return 0;
+	}
 
 	// maximum possible path lenght is half of a borderless map + half a stride
-	int size = (MAP_SIZE_WB + MAP_STRIDE_WB)/2;
+	int size = (MAP_SIZE + MAP_STRIDE)/2;
 
 	// now time for path construstion through backtracking the steps from goal
 	int pIdx = 0;
 	Vector tmpPath[];
 	ArrayInit(tmpPath, 0, size);
 
-	tmpPath[0] = goal;
-
 	// ...with a litte optimization
 	/*
-	
-	We combine vectors in a line and store only significant points.
-	By doing so we reduce path[] size and can use the distance between 
-	those points for smoother movement.
+		We combine vectors in a line and store only significant points.
+		By doing so we reduce path[] size and can use the distance between 
+		those points for smoother movement.
 
-	+ = step
-	##############    ##############
-	#   +++++++++#    #   +-------+#
-	## ++#######+# -> ## ++#######|#
-	#G++   # S+++#    #G-+   # S--+#
-	##############    ##############
-
-
+		+ = step
+		##############    ##############
+		#   +++++++++#    #   +-------+#
+		## ++#######+# -> ## ++#######|#
+		#G++   # S+++#    #G-+   # S--+#
+		##############    ##############
 	*/
-	while(!vecEq(tmpPath[pIdx], startPos))
+	Vector ahead = vecNULL;
+	tmpPath[pIdx] = goal;
+	current = goal;
+
+	while(!vecEq(ahead, startPos))
 	{
-		Vector curr = tmpPath[pIdx];
-		Vector prev = getStep(steps, curr);
-		
-		if(prev.x != curr.x && prev.y != curr.y)
+		ahead = getStep(steps, current);
+
+		if(ahead.x != tmpPath[pIdx].x && ahead.y != tmpPath[pIdx].y) 
+		{
 			pIdx++;
-		
-		tmpPath[pIdx+1] = prev;
+			tmpPath[pIdx] = current;
+		}
+
+		current = ahead;
 	}
 
 	// reverse the reversed path
 	size = pIdx+1;
 	ArrayInit(path, 0, size);
 
-	for(int i = pIdx; i > -1; i--)
-	{
-		path[pIdx-i] = tmpPath[i];
-	}
+	for(int i = 0; i < size; i++)
+		path[i] = tmpPath[pIdx-i];
 
 	// clean up (?)
 	ArrayInit(steps, 0, 0);
