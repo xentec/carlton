@@ -49,6 +49,12 @@ void logLineAppend(const string& msg)
 	Release(logMutex);
 }
 
+void logClear(int num = LOG_FIRST_LINE)
+{
+	while(num--)
+		logLine("");
+}
+
 inline
 void logInfo(const string& msg)
 {
