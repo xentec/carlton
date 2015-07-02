@@ -18,6 +18,12 @@ static const Vector vecDIRS[] = { {0, -1}, {-1, 0}, {0, 1}, {1, 0} };
 #define vecRIGHT vecDIRS[3]
 
 inline
+int round(float f)
+{
+	return trunc(frac(f) < 0.5 ? floor(f) : ceil(f));
+}
+
+inline
 Vector vecNew(VEC_TYPE x, VEC_TYPE y)
 {
 	Vector v;
@@ -40,7 +46,7 @@ string vecToStringP(const Vector& v)
 inline
 int vecLengthSquared(const Vector& v)
 {
-	return v.x*v.x - v.y*v.y;
+	return v.x*v.x + v.y*v.y;
 }
 
 float vecLength(const Vector& v)
@@ -49,6 +55,8 @@ float vecLength(const Vector& v)
 		return v.y;
 	if(v.y == 0)
 		return v.x;
+
+	logWait(StrCat("NOOO: ", vecToString(v)));
 
 	return sqrt(vecLengthSquared(v)); // NXC
 //	return sqrt(cast(float)vecLengthSquared(v));
@@ -118,6 +126,12 @@ Vector vecDiv(Vector v, int b)
 	return v;
 }
 
+Vector vecNorm(const Vector& v)
+{
+	Vector b = vecDiv(v, round(vecLength(v)));
+	return b; // try to inline it, I dare you
+}
+
 int vecDot(const Vector& a, const Vector& b)
 {
 	return a.x*b.x+a.y*b.y;
@@ -125,9 +139,7 @@ int vecDot(const Vector& a, const Vector& b)
 
 int vecAngle(const Vector& a, const Vector& b)
 {
-	float deg = DEGREES_PER_RADIAN * acos(vecDot(a,b) / (vecLength(a)*vecLength(b)));
-	deg = frac(deg) < 0.5 ? floor(deg) : ceil(deg);
-	return trunc(deg);
+	return round(DEGREES_PER_RADIAN * acos(vecDot(a,b) / (vecLength(a)*vecLength(b))));
 }
 
 
