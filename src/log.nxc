@@ -12,19 +12,19 @@
 
 #define SYMBOL_HEIGHT LCD_LINE7
 
-static string _errLines[FIRST_LINE];
-static int _errLineNum = 0;
+static string _logLines[FIRST_LINE];
+static int _logLineNum = 0;
 
 mutex logMutex;
 
 void logLine(const string& line)
 {
-	for(int i = _errLineNum; i > 0; i--)
+	for(int i = _logLineNum; i > 0; i--)
 	{
-		_errLines[i] = _errLines[i-1];
+		_logLines[i] = _logLines[i-1];
 	}
 
-	_errLines[0] = line;
+	_logLines[0] = line;
 
 	int l;
 	Acquire(logMutex);
@@ -32,20 +32,20 @@ void logLine(const string& line)
 	{
 		l = (8-FIRST_LINE + i)*SYMBOL_HEIGHT;
 		ClearLine(l);
-		TextOut(0, l, _errLines[i]);
+		TextOut(0, l, _logLines[i]);
 	}
 	Release(logMutex);
 
-	if(_errLineNum < FIRST_LINE-1)
-		_errLineNum++;
+	if(_logLineNum < FIRST_LINE-1)
+		_logLineNum++;
 }
 
 void logLineAppend(const string& msg)
 {
-	_errLines[0] = StrCat(_errLines[0], msg);
+	_logLines[0] = StrCat(_logLines[0], msg);
 
 	Acquire(logMutex);
-	TextOut(0, (8-FIRST_LINE)*SYMBOL_HEIGHT, _errLines[0]);
+	TextOut(0, (8-FIRST_LINE)*SYMBOL_HEIGHT, _logLines[0]);
 	Release(logMutex);
 }
 
