@@ -136,8 +136,11 @@ task main()
 
 	logInfo("Lade Aufgaben..");
 	loadTasks(TASK_FILE, tasks);
-	logInfo("Jarvis bereit!");
 
+	logWait("Carlton bereit!");
+
+	
+	botStart(bot);
 
 	for(int i = 0; i < ArrayLen(tasks); i++)
 	{
@@ -153,8 +156,6 @@ task main()
 		else
 			logInfo("Nicht gefunden!");
 	}
-
-
 }
 
 
