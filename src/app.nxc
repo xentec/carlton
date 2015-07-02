@@ -117,7 +117,7 @@ void loadTasks(const string& fileHandle, int& tasks[])
 		if(isDigit(cur, idx) &&  0 < idx && idx < 10) 
 		{
 			logDebug(StrCat("TSK", FormatVal("%d", i/2), ":", FormatVal("%d", idx)));
-			tasks[i/2] = idx-1;  // [1;3] -> [0;2]
+			tasks[i/2] = idx;
 		}
 	}
 }
@@ -132,7 +132,6 @@ task main()
 
 	logInfo("Lade Karte..");
 	loadMap(MAP_FILE, bot, table);
-	botStart(bot);
 
 	logInfo("Lade Aufgaben..");
 	loadTasks(TASK_FILE, tasks);
@@ -145,7 +144,7 @@ task main()
 	for(int i = 0; i < ArrayLen(tasks); i++)
 	{
 		logInfo(StrCat("Fahre zu Tisch ", FormatVal("%d", tasks[i])));
-		Vector goal = tableGetPos(table[tasks[i]]);
+		Vector goal = tableGetPos(table[tasks[i]-1]);  // [1;3] -> [0;2]
 
 		logInfo("Suche Pfad.. ");
 		logInfo(StrCat(vecToString(bot.pos)," -> ", vecToString(goal)));
