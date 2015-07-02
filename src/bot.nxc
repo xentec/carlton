@@ -1,0 +1,113 @@
+#ifndef BOT_INC
+#define BOT_INC
+
+#include "astar.nxc"
+#include "log.nxc"
+#include "table.nxc"
+#include "vector.nxc"
+
+#define BOT_START_DIR vecUP
+
+struct Bot
+{
+	Vector pos;
+	Vector dir;
+	int dirDegree;
+
+	Vector begin;
+};
+
+void botInit(Bot& bot)
+{
+	bot.dir = BOT_START_DIR;
+	bot.dirDegree = vecAngle(vecNULL, bot.dir);
+	bot.pos = vecNULL;
+}
+
+void botStart(Bot& bot)
+{
+	bot.pos = bot.begin;
+}
+
+/*
+void botSavePath(Bot& bot, const Vector& startPos, const Vector& goalTbl, const Vector& path[])
+{
+	if(!ArrayLen(startTbl.path))
+		ArrayInit(startTbl.path, 0, TABLE_LENGTH);
+
+	startTbl.path[goalTbl.id-1] = path;
+}
+
+bool botHasPath(const Table& startTbl, const Table& goalTbl, Vector& path[])
+{
+	if(!ArrayLen(startTbl.path))
+		return false;
+
+	path = startTbl.path[goalTbl.id-1];
+	return true;
+}
+*/
+
+
+// TODO: actual moving
+void botMove(Bot& bot, const Vector& goal, byte power)
+{
+	int steps = 0;
+	int distance = vecLength(goal);
+
+	logWait( StrCat("DRV:", vecToString(bot.pos), "->", vecToString(goal)) );
+
+	while(steps <= distance) {
+		
+		Wait(10000/power); // in my mind, I'm flying
+
+		logInfo(vecToString(vecAdd(bot.pos, vecMul(bot.dir, steps))));
+		steps++;
+	}
+
+}
+void botRotate(Bot& bot, const Vector& dir, byte power) 
+{
+	int degree = vecAngle(bot.dir, dir);
+	char inc = 10 * sign(degree);
+	int r = degree % 10;
+
+	if(!degree)
+		return;
+
+	logWait( StrCat("ROT:", vecToString(bot.dir), "->", vecToString(dir)) );
+
+	if(r) 
+	{
+		Wait(r*1000/power);
+		bot.dirDegree += r;
+	}
+
+	degree += bot.dirDegree;
+
+	while(bot.dirDegree != degree)
+	{
+	 	Wait(10000/power); 
+		bot.dirDegree += inc;
+	}
+	bot.dir = dir;
+}
+// ################
+
+void botRun(Bot& bot, const Vector& path[])
+{
+	int dist;
+	byte dir;
+
+	for(int i = 0; i < ArrayLen(path); i++) 
+	{
+		logInfo(StrCat("MOV:", vecToString(bot.pos),"->", vecToString(path[i])));
+
+		if(!vecEq(bot.dir, path[i])) 
+			botRotate(bot, vecDIRS[dir], 50);
+
+		botMove(bot, path[i], 50);
+	}
+}
+
+#endif // BOT_INC

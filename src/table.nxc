@@ -1,0 +1,23 @@
+#ifndef TABLE_INC
+#define TABLE_INC
+
+#include "vector.nxc"
+
+struct Color
+{
+	byte r,g,b;
+};
+
+struct Table
+{
+	byte id;
+	Vector pos[];
+	Color  col;
+};
+
+Vector tableGetPos(const Table& tbl)
+{
+	return tbl.pos[0];
+}
+
+#endif // TABLE_INC
