@@ -54,18 +54,18 @@ float vecLength(const Vector& v)
 //	return sqrt(cast(float)vecLengthSquared(v));
 }
 
-int vecCmp(const Vector& a, const Vector& b)
-{
-	if(a.x == b.x && a.y == b.y)
-		return 0;
-	
-	return vecLengthSquared(a) > vecLengthSquared(b) ? -1 : 1;
-}
-
 inline
 bool vecEq(const Vector& a, const Vector& b)
 {
-	return !vecCmp(a, b);
+	return a.x == b.x && a.y == b.y;
+}
+
+int vecCmp(const Vector& a, const Vector& b)
+{
+	if(vecEq(a,b))
+		return 0;
+	
+	return vecLengthSquared(a) > vecLengthSquared(b) ? -1 : 1;
 }
 
 inline
@@ -74,11 +74,10 @@ bool vecIsNull(const Vector& v)
 	return vecEq(v, vecNULL);
 }
 
-Vector vecAdd(const Vector& a, const Vector& b)
+Vector vecAdd(Vector v, const Vector& b)
 {
-	Vector v;
-	v.x = a.x + b.x;
-	v.y = a.y + b.y;
+	v.x += b.x;
+	v.y += b.y;
 	return v;
 }
 
@@ -89,11 +88,10 @@ void vecAddIp(Vector& v, const Vector& b)
 	v.y += b.y;
 }
 
-Vector vecSub(const Vector& a, const Vector& b)
+Vector vecSub(Vector v, const Vector& b)
 {
-	Vector v;
-	v.x = a.x - b.x;
-	v.y = a.y - b.y;
+	v.x -= b.x;
+	v.y -= b.y;
 	return v;
 }
 
@@ -103,5 +101,34 @@ void vecSubIp(Vector& v, const Vector& b)
 	v.x -= b.x;
 	v.y -= b.y;
 }
+
+inline
+Vector vecMul(Vector v, int b)
+{
+	v.x *= b;
+	v.y *= b;
+	return v;
+}
+
+inline
+Vector vecDiv(Vector v, int b)
+{
+	v.x /= b;
+	v.y /= b;
+	return v;
+}
+
+int vecDot(const Vector& a, const Vector& b)
+{
+	return a.x*b.x+a.y*b.y;
+}
+
+int vecAngle(const Vector& a, const Vector& b)
+{
+	float deg = DEGREES_PER_RADIAN * acos(vecDot(a,b) / (vecLength(a)*vecLength(b)));
+	deg = frac(deg) < 0.5 ? floor(deg) : ceil(deg);
+	return trunc(deg);
+}
+
 
 #endif // VECTOR_INC
