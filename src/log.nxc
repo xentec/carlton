@@ -69,6 +69,10 @@ void logFatal(const string& head, const string& msg)
 	while(1) {}
 }
 
-
+void logWait(const string& msg)
+{
+	logLine(msg);
+	until(ButtonCount(BTNCENTER, true));
+}
 
 #endif // LOG_INC
