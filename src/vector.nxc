@@ -56,10 +56,9 @@ float vecLength(const Vector& v)
 	if(v.y == 0)
 		return v.x;
 
-	logWait(StrCat("NOOO: ", vecToString(v)));
+	logERR("vecLen", StrCat("diagonal: ", vecToString(v)));
 
-	return sqrt(vecLengthSquared(v)); // NXC
-//	return sqrt(cast(float)vecLengthSquared(v));
+	return sqrt(vecLengthSquared(v));
 }
 
 inline

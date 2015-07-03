@@ -1,16 +1,16 @@
 #ifndef LOG_INC
 #define LOG_INC
 
+#define LOG_FIRST_LINE 8
+#define SYMBOL_HEIGHT LCD_LINE7
+
+
 #ifdef DEBUG
 	#define logDebug(str) logLine(str)
 #else
 	#define logDebug(str)
 #endif
 
-
-#define LOG_FIRST_LINE 8
-
-#define SYMBOL_HEIGHT LCD_LINE7
 
 static string _logLines[LOG_FIRST_LINE];
 static int _logLineNum = 0;
@@ -55,6 +55,12 @@ void logClear(int num = LOG_FIRST_LINE)
 		logLine("");
 }
 
+void logWait(const string& msg)
+{
+	logLine(msg);
+	until(ButtonCount(BTNCENTER, true));
+}
+
 inline
 void logInfo(const string& msg)
 {
@@ -65,7 +71,7 @@ inline
 void logError(const string& head, const string& msg)
 {
 	logLine(StrCat("ERR:", head));
-	logLine(msg);
+	logWait(msg);
 }
 
 void logFatal(const string& head, const string& msg)
@@ -75,10 +81,6 @@ void logFatal(const string& head, const string& msg)
 	while(1) {}
 }
 
-void logWait(const string& msg)
-{
-	logLine(msg);
-	until(ButtonCount(BTNCENTER, true));
-}
+
 
 #endif // LOG_INC
