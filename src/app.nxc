@@ -87,7 +87,7 @@ void loadMap(const string& fileName, Bot& bot, Table& table[])
 	CloseFile(handle);
 }
 
-void loadTasks(const string& fileHandle, int& tasks[])
+void loadTasks(const string& fileHandle, byte& tasks[])
 {
 	byte handle;
 	byte err;
@@ -127,20 +127,23 @@ task main()
 {
 	botInit(bot);
 
-	logInfo("Lade Karte..");
+	logInfo("Load map..");
 	loadMap(MAP_FILE, bot, table);
 
-	logInfo("Lade Aufgaben..");
+	logInfo("Load tasks..");
 	loadTasks(TASK_FILE, tasks);
 
-	logWait("Carlton bereit!");
+	logInfo("");
+	logInfo(" Carlton Banks  ");
+	logInfo(" at your service");
+	logWait("");
 
 
 	botStart(bot);
 
 	for(int i = 0; i < ArrayLen(tasks); i++)
 	{
-		logInfo(StrCat("Fahre zu Tisch ", FormatVal("%d", tasks[i])));
+		logInfo(StrCat("To table #", FormatVal("%d", tasks[i])));
 		Vector goal = tableGetPos(table[tasks[i]-1]);  // [1;3] -> [0;2]
 
 		Vector path[];
@@ -149,7 +152,7 @@ task main()
 			logInfo("Use saved path");
 		} else
 		{
-			logInfo(StrCat("Suche Pfad.."));
+			logInfo(StrCat("Looking for path"));
 			Astar(bot.pos, goal, path);
 
 			if(ArrayLen(path)) 
@@ -162,12 +165,12 @@ task main()
 			}
 		}
 
-		logInfo("Fahre los");
+		logInfo("On my way..");
 
 		botRun(bot, path);
 
 		logDebug(StrCat("Bot: ", vecToString(bot.pos)));
-		logWait("Angekommen!");
+		logWait("Arrived");
 	}
 }
 
