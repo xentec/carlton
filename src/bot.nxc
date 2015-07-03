@@ -8,6 +8,13 @@
 
 #define BOT_START_DIR vecUP
 
+
+struct PathEntry
+{
+	unsigned int hash;
+	Vector path[];
+};
+
 struct Bot
 {
 	Vector pos;
@@ -15,6 +22,7 @@ struct Bot
 	int dirDegree;
 
 	Vector begin;
+	PathEntry savedPaths[];
 };
 
 void botInit(Bot& bot)
@@ -29,24 +37,70 @@ void botStart(Bot& bot)
 	bot.pos = bot.begin;
 }
 
-/*
-void botSavePath(Bot& bot, const Vector& startPos, const Vector& goalTbl, const Vector& path[])
-{
-	if(!ArrayLen(startTbl.path))
-		ArrayInit(startTbl.path, 0, TABLE_LENGTH);
 
-	startTbl.path[goalTbl.id-1] = path;
+void botSavePath(Bot& bot, const Vector& begin, const Vector& end, const Vector& path[])
+{
+	int len = ArrayLen(bot.savedPaths);
+	if(!len) {
+		int tableNum = TABLE_NUM*TABLE_NUM;
+		ArrayInit(bot.savedPaths, 0, tableNum);
+	}
+
+	PathEntry peNew;
+	peNew.hash = vecHash(vecSub(end, begin));
+	peNew.path = path;
+
+	int idx = peNew.hash % len;
+	bool saved = false;
+	PathEntry pe;
+
+	for(int i = idx; i < len-idx; i++)
+	{
+		pe = bot.savedPaths[i];
+
+		if(pe.hash == peNew.hash)
+			return;
+
+		if(!pe.hash) {
+			bot.savedPaths[i] = peNew;
+			saved = true;
+			break;
+		}
+	}
+	if(!saved)
+		bot.savedPaths[idx] = peNew;
 }
 
-bool botHasPath(const Table& startTbl, const Table& goalTbl, Vector& path[])
+bool botHasPath(const Bot& bot, const Vector& begin, const Vector& end, Vector& path[])
 {
-	if(!ArrayLen(startTbl.path))
+	int len = ArrayLen(bot.savedPaths);
+	if(!len)
 		return false;
 
-	path = startTbl.path[goalTbl.id-1];
-	return true;
-}
+	unsigned int hash = vecHash(vecSub(end, begin));
+//	unsigned int hashRev = vecHash(vecSub(begin, end));
+
+	PathEntry pe;
+	int idx = hash % len;
+
+	for(int i = idx; i < len-idx; i++)
+	{
+		pe = bot.savedPaths[i];
+		if(pe.hash == hash) {
+			path = pe.path;
+			return true;
+		}
+/*		
+		if(pe.hash == hashRev) {
+			path = pe.path;
+			pathReverse(path);
+			return true;
+		}
 */
+	}
+	return false;
+}
+
 
 
 // TODO: actual moving

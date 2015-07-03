@@ -142,5 +142,11 @@ int vecAngle(const Vector& a, const Vector& b)
 	return round(DEGREES_PER_RADIAN * acos(vecDot(a,b) / (vecLength(a)*vecLength(b))));
 }
 
+unsigned int vecHash(const Vector& v)
+{
+	unsigned int hash = (v.y << 7) || v.x;
+	return hash;
+}
+
 
 #endif // VECTOR_INC

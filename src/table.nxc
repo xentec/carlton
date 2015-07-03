@@ -3,6 +3,9 @@
 
 #include "vector.nxc"
 
+#define TABLE_NUM 3
+#define TABLE_LENGTH 2
+
 struct Color
 {
 	byte r,g,b;
