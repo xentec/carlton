@@ -43,12 +43,24 @@ void setStep(Vector& arr[], const Vector& v, const Vector& data)
 	}
 }
 
+void pathReverse(Vector& path[], unsigned int begin = NA, unsigned int length = NA)
+{
+	Vector swapTmp;
+	for(int b = begin != NA ? begin : 0, 
+		    e = length != NA ? b+length-1: ArrayLen(path)-1; 
+		    b < e; b++, e--) 
+	{
+		swapTmp = path[b];
+		path[b] = path[e];
+		path[e] = swapTmp;
+	}
+}
+
 
 int heuristic(const Vector& goal, const Vector& next)
 {
 	return abs(goal.x-next.x)+abs(goal.y-next.y);
 }
-
 
 int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
 {
