@@ -46,7 +46,7 @@ void loadMap(const string& fileName, Bot& bot, Table& table[])
 	{
 		err = Read(handle, cur);
 		if(err) {
-			logFatal("mapRead", StrCat(FormatVal("%04X", err), " i:", FormatVal("%d", i)));
+			logFatal("mapRead", StrCat(FormatVal("%04X", err), " i:", NumToStr(i)));
 			break;
 		}
 
@@ -80,7 +80,7 @@ void loadMap(const string& fileName, Bot& bot, Table& table[])
 				tbl.pos[1] = v;
 			}
 		
-			logDebug(StrCat("TBL", FormatVal("%d",ArrayLen(tbl.pos)), ":", vecToString(v)));
+			logDebug(StrCat("TBL", NumToStr(ArrayLen(tbl.pos)), ":", vecToString(v)));
 			table[idx] = tbl;
 		}
 	}
@@ -113,7 +113,7 @@ void loadTasks(const string& fileHandle, byte& tasks[])
 
 		if(isDigit(cur, idx) &&  0 < idx && idx < 10) 
 		{
-			logDebug(StrCat("TSK", FormatVal("%d", i/2), ":", FormatVal("%d", idx)));
+			logDebug(StrCat("TSK", NumToStr(i/2), ":", NumToStr(idx)));
 			tasks[i/2] = idx;
 		}
 	}
@@ -143,7 +143,7 @@ task main()
 
 	for(int i = 0; i < ArrayLen(tasks); i++)
 	{
-		logInfo(StrCat("To table #", FormatVal("%d", tasks[i])));
+		logInfo(StrCat("To table #", NumToStr(tasks[i])));
 		Vector goal = tableGetPos(table[tasks[i]-1]);  // [1;3] -> [0;2]
 
 		Vector path[];

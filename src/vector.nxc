@@ -35,7 +35,7 @@ Vector vecNew(VEC_TYPE x, VEC_TYPE y)
 
 string vecToString(const Vector& v)
 {
-	return StrCat(FormatVal("%d", v.x), ";", FormatVal("%d", v.y));
+	return StrCat(NumToStr(v.x), ";", NumToStr(v.y));
 }
 
 string vecToStringP(const Vector& v)
