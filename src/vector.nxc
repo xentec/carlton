@@ -1,6 +1,7 @@
 #ifndef VECTOR_INC
 #define VECTOR_INC
 
+#include "log.nxc"
 
 #define VEC_TYPE int
 
@@ -56,7 +57,7 @@ float vecLength(const Vector& v)
 	if(v.y == 0)
 		return v.x;
 
-	logERR("vecLen", StrCat("diagonal: ", vecToString(v)));
+	logError("vecLen", StrCat("diagonal: ", vecToString(v)));
 
 	return sqrt(vecLengthSquared(v));
 }
