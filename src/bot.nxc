@@ -106,14 +106,13 @@ bool botHasPath(const Bot& bot, const Vector& begin, const Vector& end, Vector& 
 // TODO: actual moving
 void botMove(Bot& bot, const Vector& way, byte power)
 {
-	int distance = vecLength(way);
 	Vector goal = vecAdd(bot.pos, way);
-	int inc = sign(distance);
+	int inc = sign(vecLength(way));
 
 	logDebug( StrCat("DR:", vecToString(bot.pos), "+",vecToString(way), "=", vecToString(goal)) );
 
-	while(!vecEq(bot.pos, goal)) {
-		
+	while(!vecEq(bot.pos, goal)) 
+	{
 		Wait(10000/power); // in my mind, I'm flying
 
 		vecAddIp(bot.pos, vecMul(bot.dir, inc));
@@ -124,26 +123,17 @@ void botMove(Bot& bot, const Vector& way, byte power)
 void botRotate(Bot& bot, const Vector& dir, byte power) 
 {
 	int degree = vecAngle(bot.dir, dir);
-	char inc = 10 * sign(degree);
-	int r = degree % 10;
-
-	if(!degree)
-		return;
+	int inc = sign(degree);
 
 	logDebug( StrCat("RT:", vecToString(bot.dir), "->", vecToString(dir)) );
-
-	if(r) 
-	{
-		Wait(r*1000/power);
-		bot.dirDegree += r;
-	}
-
-	degree += bot.dirDegree;
 
 	while(bot.dirDegree != degree)
 	{
 	 	Wait(10000/power); 
+
 		bot.dirDegree += inc;
+		if(bot.dirDegree % 10 == 0 || bot.dirDegree == degree)
+			logDebug(StrCat(">", NumToStr(bot.dirDegree)));
 	}
 	bot.dir = dir;
 }
@@ -151,8 +141,6 @@ void botRotate(Bot& bot, const Vector& dir, byte power)
 
 void botRun(Bot& bot, const Vector& path[])
 {
-	int dist;
-	byte dir;
 	Vector rel, norm;
 
 	for(int i = 0; i < ArrayLen(path); i++) 
