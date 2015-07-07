@@ -21,6 +21,7 @@ static char map[MAP_SIZE];
 
 char mapGetCellXY(int x, int y)
 {
+	y = -y;
 	if(-1 < y && y < MAP_STRIDE  &&  -1 < x && x < MAP_STRIDE)
 		return map[y * MAP_STRIDE + x];
 	else {
@@ -40,6 +41,7 @@ char mapGetCell(const Vector& v)
 
 void mapSetCellXY(int x, int y, char data)
 {
+	y = -y;
 	if(-1 < y && y < MAP_STRIDE  &&  -1 < x && x < MAP_STRIDE)
 		map[y * MAP_STRIDE + x] = data;
 	else{

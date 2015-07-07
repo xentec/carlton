@@ -55,7 +55,7 @@ void loadMap(const string& fileName, Bot& bot, Table& table[])
 		{
 			case MAP_START:
 				v.x = i % MAP_STRIDE;
-				v.y = i / MAP_STRIDE;
+				v.y = -i / MAP_STRIDE;
 				bot.begin = v;
 				logDebug(StrCat("BOT:", vecToString(v)));
 				break;
@@ -71,7 +71,7 @@ void loadMap(const string& fileName, Bot& bot, Table& table[])
 			tbl.id = idx+1;
 
 			v.x = i % MAP_STRIDE;
-			v.y = i / MAP_STRIDE;
+			v.y = -i / MAP_STRIDE;
 
 			if(!ArrayLen(tbl.pos)) {
 				ArrayInit(tbl.pos, v, TABLE_LENGTH);

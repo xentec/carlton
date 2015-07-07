@@ -11,12 +11,12 @@ struct Vector
 };
 
 static const Vector vecNULL = {0, 0};
-static const Vector vecDIRS[] = { {0, -1}, {-1, 0}, {0, 1}, {1, 0} };
+static const Vector vecDIRS[] = { {1, 0}, {0, 1}, {-1, 0}, {0, -1} };
 
-#define vecUP vecDIRS[0]
-#define vecLEFT vecDIRS[1]
-#define vecDOWN vecDIRS[2]
-#define vecRIGHT vecDIRS[3]
+#define vecRIGHT vecDIRS[0]
+#define vecUP vecDIRS[1]
+#define vecLEFT vecDIRS[2]
+#define vecDOWN vecDIRS[3]
 
 inline
 int round(float f)

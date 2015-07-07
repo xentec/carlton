@@ -8,8 +8,9 @@
 
 int getCost(const int& arr[], const Vector& v)
 {
-	if(-1 < v.y && v.y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
-		return arr[v.y * MAP_STRIDE + v.x];
+	int y = -v.y;
+	if(-1 < y && y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
+		return arr[y * MAP_STRIDE + v.x];
 	else {
 		logFatal("getCost", vecToString(v));
 		return -1;
@@ -18,16 +19,18 @@ int getCost(const int& arr[], const Vector& v)
 
 void setCost(int& arr[], const Vector& v, int data)
 {
-	if(-1 < v.y && v.y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
-		arr[v.y * MAP_STRIDE + v.x] = data;
+	int y = -v.y;
+	if(-1 < y && y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
+		arr[y * MAP_STRIDE + v.x] = data;
 	else
 		logFatal("setCost", vecToString(v));
 }
 
 Vector getStep(const Vector& arr[], const Vector& v)
 {
-	if(-1 < v.y && v.y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
-		return arr[v.y * MAP_STRIDE + v.x];
+	int y = -v.y;
+	if(-1 < y && y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
+		return arr[y * MAP_STRIDE + v.x];
 	else {
 		logFatal("getStep", vecToString(v));
 		return vecNULL;
@@ -36,8 +39,9 @@ Vector getStep(const Vector& arr[], const Vector& v)
 
 void setStep(Vector& arr[], const Vector& v, const Vector& data)
 {
-	if(-1 < v.y && v.y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE) {
-		arr[v.y * MAP_STRIDE + v.x] = data;
+	int y = -v.y;
+	if(-1 < y && y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE) {
+		arr[y * MAP_STRIDE + v.x] = data;
 	} else {
 		logFatal("setStep", vecToString(v));
 	}
