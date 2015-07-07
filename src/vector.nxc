@@ -21,7 +21,7 @@ static const Vector vecDIRS[] = { {1, 0}, {0, 1}, {-1, 0}, {0, -1} };
 inline
 int round(float f)
 {
-	return trunc(frac(f) < 0.5 ? floor(f) : ceil(f));
+	return sign(f) * trunc(frac(f) < 0.5 ? floor(f) : ceil(f));
 }
 
 inline
