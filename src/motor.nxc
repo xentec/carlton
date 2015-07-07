@@ -1,0 +1,155 @@
+void Drive(float distance, int power, bool end=false){
+    // [SETTINGS]
+    float wheeldia = 43.2; // (mm)
+    float tolerance = 2; // (mm)
+    int corr_power = 20;
+
+    // [VAR]
+    float a_dist, c_dist;
+    float x_tar = distance+tolerance;
+    bool a_fin = false, c_fin = false;
+
+    // Drive
+    OnFwdSyncEx(OUT_AC, power, 0, RESET_ALL);
+    while(!a_fin){
+        a_dist = wheeldia*PI*(MotorTachoCount(OUT_A)/360);
+        c_dist = wheeldia*PI*(MotorTachoCount(OUT_C)/360);
+        if(a_dist >= x_tar && c_dist >= x_tar){
+            OffEx(OUT_AC,RESET_NONE); a_fin = true;
+        }
+    }
+    Wait(250);
+    a_dist = wheeldia*PI*(MotorTachoCount(OUT_A)/360);
+    c_dist = wheeldia*PI*(MotorTachoCount(OUT_C)/360);
+
+    Wait(250);
+
+    // Drive Correction
+    a_fin = false;
+    c_fin = false;
+
+    OnFwdEx(OUT_A, -corr_power, RESET_NONE);
+    OnFwdEx(OUT_C, -corr_power, RESET_NONE);
+    while(!a_fin || !c_fin){
+        a_dist = wheeldia*PI*(MotorTachoCount(OUT_A)/360);
+        c_dist = wheeldia*PI*(MotorTachoCount(OUT_C)/360);
+        if(a_dist <= x_tar){
+            OffEx(OUT_A,RESET_NONE); a_fin = true;
+        }
+        if(c_dist <= x_tar){
+            OffEx(OUT_C,RESET_NONE); c_fin = true;
+        }
+    }
+    Wait(250);
+    a_dist = wheeldia*PI*(MotorTachoCount(OUT_A)/360);
+    c_dist = wheeldia*PI*(MotorTachoCount(OUT_C)/360);
+
+    // [RESET]
+    OffEx(OUT_AC,RESET_ALL);
+    
+    // [END]
+    Wait(250);
+}
+
+void Rotate(long deg,int power){
+    // [SETTINGS]
+    int tolerance = 2;
+    int corr_power = 30;
+
+    // [VAR]
+    long a_tac = 0, c_tac = 0;
+    long x_tar = (deg/2);
+    bool a_fin = false, c_fin = false;
+
+    // Rotate
+    if(deg >= 0){
+        OnFwdEx(OUT_A, power, RESET_ALL);
+        OnFwdEx(OUT_C, -power, RESET_ALL);
+        while(!a_fin || !c_fin){
+            a_tac = MotorTachoCount(OUT_A);
+            c_tac = -MotorTachoCount(OUT_C);
+            if(a_tac >= x_tar+tolerance && !a_fin){
+                OffEx(OUT_A,RESET_NONE); a_fin = true;
+            }
+            if(c_tac >= x_tar+tolerance && !c_fin){
+                OffEx(OUT_C,RESET_NONE); c_fin = true;
+            }
+        }
+        Wait(250);
+        a_tac = MotorTachoCount(OUT_A);
+        c_tac = -MotorTachoCount(OUT_C);
+    }else{
+        OnFwdEx(OUT_A, -power, RESET_ALL);
+        OnFwdEx(OUT_C, power, RESET_ALL);
+        while(!a_fin || !c_fin){
+            a_tac = MotorTachoCount(OUT_A);
+            c_tac = -MotorTachoCount(OUT_C);
+            if(a_tac <= x_tar-tolerance && !a_fin){
+                OffEx(OUT_A,RESET_NONE); a_fin = true;
+            }
+            if(c_tac <= x_tar-tolerance && !c_fin){
+                OffEx(OUT_C,RESET_NONE); c_fin = true;
+            }
+        }
+        Wait(250);
+        a_tac = -MotorTachoCount(OUT_A);
+        c_tac = MotorTachoCount(OUT_C);
+    }
+
+    // Rotation Correction
+    a_fin = a_tac-x_tar == 0;
+    c_fin = c_tac-x_tar == 0;
+
+    if(deg >= 0){
+        OnFwdEx(OUT_A, -corr_power, RESET_NONE);
+        OnFwdEx(OUT_C, corr_power, RESET_NONE);
+        while(!a_fin || !c_fin){
+            a_tac = MotorTachoCount(OUT_A);
+            c_tac = -MotorTachoCount(OUT_C);
+            if(a_tac <= x_tar+tolerance && !a_fin){
+                OffEx(OUT_A,RESET_NONE); a_fin = true;
+            }
+            if(c_tac <= x_tar+tolerance && !c_fin){
+                OffEx(OUT_C,RESET_NONE); c_fin = true;
+            }
+        }
+    }else{
+        OnFwdEx(OUT_A, corr_power, RESET_NONE);
+        OnFwdEx(OUT_C, -corr_power, RESET_NONE);
+        while(!a_fin || !c_fin){
+            a_tac = MotorTachoCount(OUT_A);
+            c_tac = -MotorTachoCount(OUT_C);
+            if(a_tac >= x_tar-tolerance && !a_fin){
+                OffEx(OUT_A,RESET_NONE); a_fin = true;
+            }
+            if(c_tac >= x_tar-tolerance && !c_fin){
+                OffEx(OUT_C,RESET_NONE); c_fin = true;
+            }
+        }
+    }
+
+    // [RESET]
+    OffEx(OUT_AC,RESET_ALL);
+
+    // [END]
+}
+
+task main(){
+    int x_rotation = 405;
+    int x_fields = 4;
+    int x_power = 50;
+    //SetSensorTouch(IN_1);
+    //until(SENSOR_1){}
+
+    Drive(25,x_power);
+    Rotate(-x_rotation,x_power);
+    Drive(25,x_power);
+    Rotate(-x_rotation,x_power);
+    Drive(25,x_power);
+    Rotate(x_rotation,x_power);
+    Drive(25,x_power);
+    Rotate(x_rotation,x_power);
+    Drive(25,x_power);
+
+    while(1){};
+}
