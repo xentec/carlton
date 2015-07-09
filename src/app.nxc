@@ -1,9 +1,11 @@
-//#define DEBUG
+#define DEBUG
 
 #include "bot.nxc"
+#include "event.nxc"
 #include "log.nxc"
 #include "map.nxc"
 #include "table.nxc"
+#include "timer.nxc"
 #include "vector.nxc"
 
 
@@ -12,6 +14,9 @@
 
 #define MAP_FILE    "map.txt"
 #define TASK_FILE   "task.txt"
+
+#define PORT_TOUCH IN_1
+#define PORT_COLOR IN_2
 
 
 // #########################################
@@ -125,46 +130,254 @@ void loadTasks(const string& fileHandle, byte& tasks[])
 	}
 }
 
+struct ToneEx{
+    unsigned int frequency; // 0 = Pause;
+    unsigned int duration; // (ms);
+    byte volume; // 0-4;
+};
+
+ToneEx birthdayparty[]={  //Duration: 1780ms;
+{TONE_D6, 120, 3},
+{0, 150, 1},
+{TONE_A5, 120, 3},
+{0, 30, 1},
+{TONE_A5, 90, 3},
+{0, 30, 1},
+{TONE_B5, 120, 3},
+{0, 150, 1},
+{TONE_A5, 140, 3},
+{0, 390, 1},
+{TONE_CS6, 140, 3},
+{0, 180, 1},
+{TONE_D6, 120, 3}
+};
+
+ToneEx pokemonheal[]={
+{TONE_B6, 480, 3},
+{0, 20, 1},
+{TONE_B6, 480, 3},
+{0, 20, 1},
+{TONE_B6, 240, 3},
+{TONE_GS6, 260, 3},
+{TONE_E7, 240, 3}
+};
+
+
+void PlayTonesEx(ToneEx& tones[]){
+    int i = 0;
+    int size = ArrayLen(tones);
+    for(i=0;i<size;i++){
+        if(tones[i].frequency)
+            PlayToneEx(tones[i].frequency,tones[i].duration,tones[i].volume,false);
+        Wait(tones[i].duration);
+    }
+}
+
 Bot bot;
 Table table[3];
 byte tasks[];
+Color currentColor;
+
+#define EVENT_GO             0
+#define EVENT_BTL_PLACED     1
+#define EVENT_BTL_TAKEN      2
+#define EVENT_COLOR_CHANGED  3
+
+#define EVENT_AT_TBL1 11
+#define EVENT_AT_TBL2 12
+#define EVENT_AT_TBL3 13
+
+#define TIMER_TBL_WAIT   0
+#define TIMER_TIMEOUT    1
+
+safecall
+void MotorNumOut(int y)
+{
+	ClearLine(y);
+	NumOut(0, y, MotorPower(OUT_A));
+	NumOut(80, y, MotorPower(OUT_C));
+}
+
+task observer()
+{
+	SetSensorTouch(PORT_TOUCH);
+	SetSensorColorFull(PORT_COLOR);
+
+	bool bottleIn = false;
+	int colors_raw[4], colors_raw_prev[4];
+	unsigned int dummy[4];
+	int dum;
+
+	while(1)
+	{
+		if(!bottleIn && Sensor(PORT_TOUCH))
+		{
+			bottleIn = true;
+			eventSet(EVENT_BTL_PLACED);
+			eventClear(EVENT_BTL_TAKEN);
+
+			logInfo("Bottle placed");
+		} 
+		else if(bottleIn && !Sensor(PORT_TOUCH)) {
+			bottleIn = false;
+			eventSet(EVENT_BTL_TAKEN);
+			eventClear(EVENT_BTL_PLACED);
+
+			logInfo("Bottle taken");
+		}
+
+		colors_raw_prev = colors_raw;
+		ReadSensorColorEx(PORT_COLOR, dum, dummy, dummy, colors_raw);
+		for(int i = 0; i < 4; i++) 
+		{
+			if(abs(colors_raw_prev[i] - colors_raw[i]) >= COLOR_TOLERANCE)
+			{
+				currentColor.r = colors_raw[INPUT_RED];
+				currentColor.g = colors_raw[INPUT_GREEN];
+				currentColor.b = colors_raw[INPUT_BLUE];
+
+				//logInfo("COLOR CHANGED");
+//				logInfo(StrCat(NumToStr(colors_raw_prev[INPUT_RED]), "->", NumToStr(colors_raw[INPUT_RED])));
+//				logInfo(StrCat(NumToStr(colors_raw_prev[INPUT_GREEN]), "->", NumToStr(colors_raw[INPUT_GREEN])));
+//				logInfo(StrCat(NumToStr(colors_raw_prev[INPUT_BLUE]), "->", NumToStr(colors_raw[INPUT_BLUE])));
+				//logInfo(colorToString(currentColor));
+
+				eventSet(EVENT_COLOR_CHANGED);
+				break;
+			}
+		}
+
+		MotorNumOut(LCD_LINE8);
+
+		timerTick();
+		Wait(20);
+	}
+}
+
+task radar(){
+    OnFwd(OUT_B, 50);
+    while(1){
+        if(MotorRotationCount(OUT_B) % 360 == 0) {
+            PlayToneEx(TONE_C6,200,1,false); Wait(200);
+            PlayToneEx(TONE_C6,200,1,false); Wait(200);
+            PlayToneEx(TONE_C6,200,1,false); Wait(200);
+        }
+        Wait(300);
+    }
+}
+
 
 task main() 
 {
 	botInit(bot);
+/*
+	// [VAR]
+	long time, time_prev = 0, time_delta;
 
-	logInfo("Load map..");
+	float ratio_Kp = 0.2, ratio_dErr = 0.0;
+	float ratio_Ki = 0.1, ratio_iErr = 0.0;
+	float ratio_Kd = 0.05, ratio_dErr_prev = 0.0;
+	long ratio_corr = 0;
+
+	long minP = BOT_MIN_POWER;
+	byte powerA, powerB;
+
+	long rotCount[2];
+
+	// lg(w) (w sin(x 2 π / w - π / 2) + w)
+
+	do {
+			// Delta Zeit
+		time = CurrentTick() - FirstTick();
+		time_delta = time - time_prev;
+		time_prev = time;
+
+		rotCount[0] = MotorRotationCount(bot.motorA.port);
+		rotCount[1] = MotorRotationCount(bot.motorC.port);
+
+		ratio_dErr = rotCount[0] - rotCount[1];
+
+		// PID-Regler
+		ratio_iErr += ratio_dErr*time_delta/1000;
+		ratio_corr = ratio_Kp*ratio_dErr + ratio_Ki*ratio_iErr + ratio_Kd*(ratio_dErr-ratio_dErr_prev)/(time_delta/1000);
+		ratio_dErr_prev = ratio_dErr;
+
+		powerA = minP+ratio_corr;
+		powerA = minP-ratio_corr;
+
+		// Leistung auf [0;100] normalisieren
+		powerA = clamp(powerA,0,100);
+		powerB = clamp(powerB,0,100);
+
+		// Gib Gas!
+		OnFwd(bot.motorA.port, minP+ratio_corr);
+		OnFwd(bot.motorC.port, minP-ratio_corr);
+
+
+		ClearLine(LCD_LINE5);
+		NumOut(0, LCD_LINE5, rotCount[0]);
+		NumOut(40, LCD_LINE5, ratio_corr);
+		NumOut(80, LCD_LINE5, rotCount[1]);
+
+		ClearLine(LCD_LINE7);
+		NumOut(0, LCD_LINE7, minP+ratio_corr);
+		NumOut(40, LCD_LINE7, ratio_dErr);
+		NumOut(80, LCD_LINE7, minP-ratio_corr);
+
+		Wait(100);
+
+
+	} while(1);
+
+*/
+
+	timerInit(4);
+	timerSet(TIMER_TBL_WAIT, 10000, EVENT_GO);
+	timerSet(TIMER_TIMEOUT, 2000, EVENT_GO);
+
+	logInfo("Loading map..");
 	loadMap(MAP_FILE, bot, table);
 
-	logInfo("Load tasks..");
+	logInfo("Loading tasks..");
 	loadTasks(TASK_FILE, tasks);
+
+	logInfo("Running observer");
+	start observer;
+
+//	start radar;
 
 	logInfo("");
 	logInfo(" Carlton Banks  ");
 	logInfo(" at your service");
-	logWait("");
+	logInfo("");
 
 
 	botStart(bot);
 
 	Vector goal;
+	bool toStart = false;
 	for(int i = 0; i < ArrayLen(tasks); i++)
 	{
-		if(tasks[i] > 0) 
+		if(!toStart && tasks[i] > 0) 
 		{
 			logInfo(StrCat("To table #", NumToStr(tasks[i])));
 			goal = tableGetPos(table[tasks[i]-1]);  // [1;3] -> [0;2]
 		} else
 		{
-			logInfo("To start ");
+			logInfo("Back to start");
 			goal = bot.begin;
+
+			if(toStart)
+				i--;
 		}
+
+        PlayTonesEx(pokemonheal);
 
 
 		Vector path[];
 		if(botHasPath(bot, bot.pos, goal, path)) 
 		{
-			logInfo("Use saved path");
+			logInfo("Using saved path");
 		} else
 		{
 			logInfo(StrCat("Looking for path"));
@@ -172,8 +385,8 @@ task main()
 
 			if(ArrayLen(path)) 
 			{
-				logInfo("Saving path..");
-				botSavePath(bot, bot.pos, goal, path);
+//				logInfo("Saving path..");
+//				botSavePath(bot, bot.pos, goal, path);
 			} else
 			{
 				logInfo("Path not found!");
@@ -185,7 +398,36 @@ task main()
 		botRun(bot, path);
 
 		logDebug(StrCat("Bot: ", vecToString(bot.pos)));
-		logWait("Arrived");
+		logInfo(StrCat("Waiting at #", NumToStr(tasks[i])));
+
+        PlayTonesEx(birthdayparty);
+
+
+		unsigned long remaining, prev_rmg;
+		bool placed = eventIsSet(EVENT_BTL_PLACED);
+
+		timerStart(TIMER_TBL_WAIT);
+		do {
+			if(!placed && eventIsSet(EVENT_BTL_PLACED) || placed && eventIsSet(EVENT_BTL_TAKEN))
+			{
+				timerCancel(TIMER_TBL_WAIT);
+				timerStart(TIMER_TIMEOUT);
+				placed = !placed;
+			}
+
+			remaining = timerRemaining(TIMER_TBL_WAIT)/1000;
+			if(!remaining)
+				remaining = timerRemaining(TIMER_TIMEOUT)/1000;
+
+			if(remaining != prev_rmg)
+				logInfo(NumToStr(remaining));
+			prev_rmg = remaining;
+
+			Wait(200);
+		} while(!eventIsSet(EVENT_GO));
+		
+		eventClear(EVENT_GO);
+		toStart = !toStart && eventIsSet(EVENT_BTL_PLACED);
 	}
 }
 

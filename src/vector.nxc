@@ -19,6 +19,24 @@ static const Vector vecDIRS[] = { {1, 0}, {0, 1}, {-1, 0}, {0, -1} };
 #define vecDOWN vecDIRS[3]
 
 inline
+int min(int a, int b)
+{
+	return a < b ? a : b;
+}
+
+inline
+int max(int a, int b)
+{
+	return a > b ? a : b;
+}
+
+inline
+int clamp(int x, int min_val, int max_val)
+{
+	return max(min(x, max_val), min_val);
+}
+
+inline
 int round(float f)
 {
 	return sign(f) * trunc(frac(f) < 0.5 ? floor(f) : ceil(f));
@@ -134,17 +152,19 @@ Vector vecNorm(const Vector& v)
 
 int vecDot(const Vector& a, const Vector& b)
 {
-	return a.x*b.x+a.y*b.y;
+	return a.x*b.x + a.y*b.y;
 }
 
 int vecAngle(const Vector& a, const Vector& b)
 {
-	return round(DEGREES_PER_RADIAN * acos(vecDot(a,b) / (vecLength(a)*vecLength(b))));
+	int deg = atan2d(b.y, b.x) - atan2d(a.y, a.x);
+ 	return abs(deg) > 180 ? (180 - deg) % 360 : deg; 
 }
 
 unsigned int vecHash(const Vector& v)
 {
-	unsigned int hash = (v.y << 7) || v.x;
+	unsigned int hash = v.y;
+	hash = (hash << 7) || v.x;
 	return hash;
 }
 

@@ -6,10 +6,17 @@
 #define TABLE_NUM 3
 #define TABLE_LENGTH 2
 
+#define COLOR_TOLERANCE 50
+
 struct Color
 {
 	byte r,g,b;
 };
+
+string colorToString(const Color& color)
+{
+	return StrCat(FormatVal("#%02x", color.r),FormatVal("%02x", color.g), FormatVal("%02x", color.b));
+}
 
 struct Table
 {
@@ -21,6 +28,12 @@ struct Table
 Vector tableGetPos(const Table& tbl)
 {
 	return tbl.pos[0];
+}
+
+bool tableIsColor(const Table& tbl, const Color& color)
+{
+//	for(int i = 0; )
+	return true;
 }
 
 #endif // TABLE_INC

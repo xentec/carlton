@@ -3,10 +3,23 @@
 
 #include "astar.nxc"
 #include "log.nxc"
+#include "map.nxc"
 #include "table.nxc"
 #include "vector.nxc"
 
-#define BOT_START_DIR vecUP
+#include "motor.nxc"
+
+#define BOT_SIMULATE 0
+
+#define BOT_START_DIR vecDOWN
+
+#define BOT_RPM 40
+#define BOT_MIN_POWER 40
+#define BOT_CORR_POWER 30
+
+#define BOT_WHEEL_DIA 43.2 // (mm)
+#define BOT_MOTOR_TOLERANCE 2 // (mm)
+
 
 
 struct PathEntry
@@ -23,6 +36,9 @@ struct Bot
 
 	Vector begin;
 	PathEntry savedPaths[];
+
+	Motor motorA;
+	Motor motorC;
 };
 
 void botInit(Bot& bot)
@@ -30,6 +46,9 @@ void botInit(Bot& bot)
 	bot.dir = BOT_START_DIR;
 	bot.dirDegree = vecAngle(vecRIGHT, bot.dir);
 	bot.pos = vecNULL;
+
+	bot.motorA.port = OUT_A;
+	bot.motorC.port = OUT_C;
 }
 
 void botStart(Bot& bot)
@@ -78,7 +97,7 @@ bool botHasPath(const Bot& bot, const Vector& begin, const Vector& end, Vector& 
 		return false;
 
 	unsigned int hash = vecHash(vecSub(end, begin));
-//	unsigned int hashRev = vecHash(vecSub(begin, end));
+ //	unsigned int hashRev = vecHash(vecSub(begin, end));
 
 	PathEntry pe;
 	int idx = hash % len;
@@ -90,13 +109,13 @@ bool botHasPath(const Bot& bot, const Vector& begin, const Vector& end, Vector& 
 			path = pe.path;
 			return true;
 		}
-/*		
+ /*		
 		if(pe.hash == hashRev) {
 			path = pe.path;
 			pathReverse(path);
 			return true;
 		}
-*/
+ */
 	}
 	return false;
 }
@@ -107,18 +126,25 @@ bool botHasPath(const Bot& bot, const Vector& begin, const Vector& end, Vector& 
 void botMove(Bot& bot, const Vector& way, byte power)
 {
 	Vector goal = vecAdd(bot.pos, way);
+	int distance = MAP_CELL_CM * abs(vecLength(way));
+
 
 	logDebug( StrCat("DR:", vecToString(bot.pos), "+",vecToString(way), "=", vecToString(goal)) );
 
-	while(!vecEq(bot.pos, goal)) 
+#if BOT_SIMULATE	
+	while(!vecEq(bot.pos, goal))
 	{
-		Wait(10000/power); // in my mind, I'm flying
-
-		vecAddIp(bot.pos, vecMul(bot.dir, 1));
-		logWait(StrCat(">",vecToString(bot.pos)));
+		Wait(1000/power);
+		vecAddIp(bot.pos, bot.dir);
+		logDebug(StrCat(">",vecToString(bot.pos)));
 	}
+#else
+	vecAddIp(bot.pos, way);
+	Drive(distance, power);
+#endif
 
 }
+
 void botRotate(Bot& bot, const Vector& dir, byte power) 
 {
 	int degree = vecAngle(bot.dir, dir);
@@ -126,16 +152,22 @@ void botRotate(Bot& bot, const Vector& dir, byte power)
 	int goalDegree = (bot.dirDegree + degree);
 
 	logDebug( StrCat("RT:", vecToString(bot.dir), "->", vecToString(dir)) );
-	logWait( StrCat("  :", NumToStr(bot.dirDegree), "+ ", NumToStr(degree), "=", NumToStr(goalDegree)));
+	logDebug( StrCat("  :", NumToStr(bot.dirDegree), "+ ", NumToStr(degree), "=", NumToStr(goalDegree)));
 
+#if BOT_SIMULATE
 	while(bot.dirDegree != goalDegree)
 	{
-	 	Wait(1000/power); 
+		Wait(1000/power); 
 
 		bot.dirDegree += inc;
 		if(bot.dirDegree % 10 == 0 || bot.dirDegree == degree)
 			logDebug(StrCat(">", NumToStr(bot.dirDegree)));
 	}
+#else
+	bot.dirDegree += degree;
+	Rotate(degree, power);
+#endif
+
 	bot.dirDegree %= 360;
 	bot.dir = dir;
 }
@@ -144,18 +176,33 @@ void botRotate(Bot& bot, const Vector& dir, byte power)
 void botRun(Bot& bot, const Vector& path[])
 {
 	Vector rel, norm;
+	int len = ArrayLen(path);
 
-	for(int i = 0; i < ArrayLen(path); i++) 
+	int i;
+	for(i = 0; i < len-1; i++) 
 	{
 		logDebug( StrCat("MV:", vecToString(bot.pos),"->", vecToString(path[i])) );
 
 		rel = vecSub(path[i], bot.pos);
 		norm = vecNorm(rel);
-		if(!vecEq(bot.dir, norm)) 
-			botRotate(bot, norm, 50);
 
-		botMove(bot, rel, 50);
+		logDebug( StrCat("REL:", vecToString(rel)," NRM:", vecToString(norm)) );
+
+		if(!vecEq(bot.dir, norm)) 
+			botRotate(bot, norm, BOT_MIN_POWER);
+
+		botMove(bot, rel, BOT_MIN_POWER);
 	}
+
+	rel = vecSub(path[i], bot.pos);
+	norm = vecNorm(rel);
+	if(!vecEq(bot.dir, norm)) 
+		botRotate(bot, norm, BOT_MIN_POWER);
+
+	if(!vecEq(path[i], bot.begin))
+		return;
+
+	botMove(bot, rel, BOT_MIN_POWER);
 }
 
 #endif // BOT_INC

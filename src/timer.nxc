@@ -1,8 +1,7 @@
-// Timers
+#ifndef TIMER_INC
+#define TIMER_INC
 
 typedef byte Timer;
-
-mutex timerMutex;
 
 struct _tmr {
 	Event event;
@@ -16,9 +15,9 @@ task timerTask();
 void timerInit(unsigned int count)
 {
 	ArrayInit(timers, NULL, count);
-	//StartTask(timerTask);
 }
 
+safecall
 void timerSet(Timer t, int duration, Event event, bool repeating = false)
 {
 	timers[t].dur = duration;
@@ -26,22 +25,32 @@ void timerSet(Timer t, int duration, Event event, bool repeating = false)
 	timers[t].repeating = repeating;
 }
 
+safecall
 void timerStart(Timer timer)
 {
 	timers[timer].end = CurrentTick()+timers[timer].dur;
 }
 
+safecall
 void timerCancel(Timer timer)
 {
 	timers[timer].end = 0;
 }
 
+safecall
 unsigned long timerRemaining(Timer t)
 {
 	long time = timers[t].end - CurrentTick();
 	return  time > 0 ? time : 0;
 }
 
+safecall
+bool timerIsRunning(Timer t)
+{
+	return timerRemaining(t) != 0;
+}
+
+safecall
 void timerTick()
 {
 	for(int i = 0; i < ArrayLen(timers); i++)
@@ -63,9 +72,9 @@ void timerTick()
 task timerTask()
 {
 	do {
-		Acquire(timerMutex);
 		timerTick();
-		Release(timerMutex);
 		Wait(20);
 	} while(1);
 }
+
+#endif

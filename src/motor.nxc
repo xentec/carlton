@@ -1,4 +1,42 @@
-void Drive(float distance, int power, bool end=false){
+
+#include "log.nxc"
+#include "map.nxc"
+#include "vector.nxc"
+
+#define MOTOR_WHEEL_DIA 43.2 // (mm)
+
+
+struct Motor
+{
+    byte port;
+    long prevTick;
+    long prevDeg;
+    int offset;
+};
+
+int motorGetRPM(Motor& motor)
+{
+    long curTick = CurrentTick(),
+         curDeg = MotorRotationCount(motor.port);
+
+    long dt = curTick - motor.prevTick,
+         dg = curDeg - motor.prevDeg;
+
+    motor.prevTick = curTick;
+    motor.prevDeg = curDeg;
+
+    return abs(round(dg * 166.6667 / dt));
+}
+
+int motorGetDist(Motor& motor)
+{
+    return round(MOTOR_WHEEL_DIA * PI * MotorRotationCount(motor.port) / 360.0); // mm
+}
+
+
+
+
+void Drive(float distance, int power, bool end=false) {
     // [SETTINGS]
     float wheeldia = 43.2; // (mm)
     float tolerance = 2; // (mm)
@@ -8,19 +46,30 @@ void Drive(float distance, int power, bool end=false){
     float a_dist, c_dist;
     float x_tar = distance+tolerance;
     bool a_fin = false, c_fin = false;
+    float lg = log10(1.0*distance/MAP_CELL_CM) * 20;
+
+//    
+    int pwr = 0;
 
     // Drive
-    OnFwdSyncEx(OUT_AC, power, 0, RESET_ALL);
+    OnFwdSyncEx(OUT_AC, pwr, 0, RESET_ALL);
     while(!a_fin){
-        a_dist = wheeldia*PI*(MotorTachoCount(OUT_A)/360);
-        c_dist = wheeldia*PI*(MotorTachoCount(OUT_C)/360);
+        a_dist = wheeldia*PI*(MotorRotationCount(OUT_A)/360.0);
+        c_dist = wheeldia*PI*(MotorRotationCount(OUT_C)/360.0);
+        
+        pwr = lg * (distance * sin(a_dist/MAP_CELL_CM * 2*PI / (distance/MAP_CELL_CM) - PI/2) +distance) / MAP_CELL_CM + power;
+        pwr = clamp(pwr, power, 80);
+
+        logInfo(StrCat(FormatVal("%d", pwr)));
+        OnFwdSyncEx(OUT_AC, pwr, 0, RESET_NONE);
+
         if(a_dist >= x_tar && c_dist >= x_tar){
             OffEx(OUT_AC,RESET_NONE); a_fin = true;
         }
+        Wait(250);
     }
-    Wait(250);
-    a_dist = wheeldia*PI*(MotorTachoCount(OUT_A)/360);
-    c_dist = wheeldia*PI*(MotorTachoCount(OUT_C)/360);
+    a_dist = wheeldia*PI*(MotorRotationCount(OUT_A)/360.0);
+    c_dist = wheeldia*PI*(MotorRotationCount(OUT_C)/360.0);
 
     Wait(250);
 
@@ -31,8 +80,8 @@ void Drive(float distance, int power, bool end=false){
     OnFwdEx(OUT_A, -corr_power, RESET_NONE);
     OnFwdEx(OUT_C, -corr_power, RESET_NONE);
     while(!a_fin || !c_fin){
-        a_dist = wheeldia*PI*(MotorTachoCount(OUT_A)/360);
-        c_dist = wheeldia*PI*(MotorTachoCount(OUT_C)/360);
+        a_dist = wheeldia*PI*(MotorRotationCount(OUT_A)/360);
+        c_dist = wheeldia*PI*(MotorRotationCount(OUT_C)/360);
         if(a_dist <= x_tar){
             OffEx(OUT_A,RESET_NONE); a_fin = true;
         }
@@ -41,8 +90,8 @@ void Drive(float distance, int power, bool end=false){
         }
     }
     Wait(250);
-    a_dist = wheeldia*PI*(MotorTachoCount(OUT_A)/360);
-    c_dist = wheeldia*PI*(MotorTachoCount(OUT_C)/360);
+    a_dist = wheeldia*PI*(MotorRotationCount(OUT_A)/360);
+    c_dist = wheeldia*PI*(MotorRotationCount(OUT_C)/360);
 
     // [RESET]
     OffEx(OUT_AC,RESET_ALL);
@@ -51,61 +100,68 @@ void Drive(float distance, int power, bool end=false){
     Wait(250);
 }
 
-void Rotate(long deg,int power){
+void Rotate(int deg,int power){
     // [SETTINGS]
-    int tolerance = 2;
-    int corr_power = 30;
+    int tolerance = 1;
+    int corr_power = clamp(power, 30, 50);
+    float wheel_distance = 115; // mm
 
     // [VAR]
     long a_tac = 0, c_tac = 0;
-    long x_tar = (deg/2);
+    long x_tar = (RADIANS_PER_DEGREE * deg/2.0 * wheel_distance) / (MOTOR_WHEEL_DIA*PI) * 360;
     bool a_fin = false, c_fin = false;
 
+    //RotateMotorEx(OUT_AC,power,sign(deg)*x_tar,-sign(deg)*100,true,true);
+    //return;
+
+    if(!deg)
+        return;
+
     // Rotate
-    if(deg >= 0){
+    if(deg > 0){
         OnFwdEx(OUT_A, power, RESET_ALL);
         OnFwdEx(OUT_C, -power, RESET_ALL);
         while(!a_fin || !c_fin){
-            a_tac = MotorTachoCount(OUT_A);
-            c_tac = -MotorTachoCount(OUT_C);
+            a_tac = MotorRotationCount(OUT_A);
+            c_tac = -MotorRotationCount(OUT_C);
             if(a_tac >= x_tar+tolerance && !a_fin){
                 OffEx(OUT_A,RESET_NONE); a_fin = true;
             }
             if(c_tac >= x_tar+tolerance && !c_fin){
                 OffEx(OUT_C,RESET_NONE); c_fin = true;
             }
+            Wait(250);
         }
-        Wait(250);
-        a_tac = MotorTachoCount(OUT_A);
-        c_tac = -MotorTachoCount(OUT_C);
+        a_tac = MotorRotationCount(OUT_A);
+        c_tac = -MotorRotationCount(OUT_C);
     }else{
         OnFwdEx(OUT_A, -power, RESET_ALL);
         OnFwdEx(OUT_C, power, RESET_ALL);
         while(!a_fin || !c_fin){
-            a_tac = MotorTachoCount(OUT_A);
-            c_tac = -MotorTachoCount(OUT_C);
+            a_tac = MotorRotationCount(OUT_A);
+            c_tac = -MotorRotationCount(OUT_C);
             if(a_tac <= x_tar-tolerance && !a_fin){
                 OffEx(OUT_A,RESET_NONE); a_fin = true;
             }
             if(c_tac <= x_tar-tolerance && !c_fin){
                 OffEx(OUT_C,RESET_NONE); c_fin = true;
             }
+            Wait(250);
         }
-        Wait(250);
-        a_tac = -MotorTachoCount(OUT_A);
-        c_tac = MotorTachoCount(OUT_C);
+        a_tac = -MotorRotationCount(OUT_A);
+        c_tac = MotorRotationCount(OUT_C);
     }
 
     // Rotation Correction
     a_fin = a_tac-x_tar == 0;
     c_fin = c_tac-x_tar == 0;
 
-    if(deg >= 0){
+    if(deg > 0){
         OnFwdEx(OUT_A, -corr_power, RESET_NONE);
         OnFwdEx(OUT_C, corr_power, RESET_NONE);
         while(!a_fin || !c_fin){
-            a_tac = MotorTachoCount(OUT_A);
-            c_tac = -MotorTachoCount(OUT_C);
+            a_tac = MotorRotationCount(OUT_A);
+            c_tac = -MotorRotationCount(OUT_C);
             if(a_tac <= x_tar+tolerance && !a_fin){
                 OffEx(OUT_A,RESET_NONE); a_fin = true;
             }
@@ -117,8 +173,8 @@ void Rotate(long deg,int power){
         OnFwdEx(OUT_A, corr_power, RESET_NONE);
         OnFwdEx(OUT_C, -corr_power, RESET_NONE);
         while(!a_fin || !c_fin){
-            a_tac = MotorTachoCount(OUT_A);
-            c_tac = -MotorTachoCount(OUT_C);
+            a_tac = MotorRotationCount(OUT_A);
+            c_tac = -MotorRotationCount(OUT_C);
             if(a_tac >= x_tar-tolerance && !a_fin){
                 OffEx(OUT_A,RESET_NONE); a_fin = true;
             }
@@ -132,24 +188,4 @@ void Rotate(long deg,int power){
     OffEx(OUT_AC,RESET_ALL);
 
     // [END]
-}
-
-task main(){
-    int x_rotation = 405;
-    int x_fields = 4;
-    int x_power = 50;
-    //SetSensorTouch(IN_1);
-    //until(SENSOR_1){}
-
-    Drive(25,x_power);
-    Rotate(-x_rotation,x_power);
-    Drive(25,x_power);
-    Rotate(-x_rotation,x_power);
-    Drive(25,x_power);
-    Rotate(x_rotation,x_power);
-    Drive(25,x_power);
-    Rotate(x_rotation,x_power);
-    Drive(25,x_power);
-
-    while(1){};
 }

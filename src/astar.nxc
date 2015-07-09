@@ -60,13 +60,36 @@ void pathReverse(Vector& path[], unsigned int begin = NA, unsigned int length = 
 	}
 }
 
+bool pathIsClear(const Vector& begin, const Vector& end)
+{
+	Vector path = vecSub(end, begin);
+
+	// this function is not for straight vectors
+	if(path.x == 0 || path.y == 0)
+		return true;
+
+	int incX = sign(path.x);
+	int incY = sign(path.y);
+
+	for(int x = begin.x; x != end.x; x += incX)
+	{
+		for(int y = begin.y; y != end.y; y += incY)
+		{
+			if(mapIsObstacle(mapGetCell(vecAdd(begin, vecNew(x,y)))))
+				return false;
+		}
+	}
+
+	return true;
+}
+
 
 int heuristic(const Vector& goal, const Vector& next)
 {
 	return abs(goal.x-next.x)+abs(goal.y-next.y);
 }
 
-int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
+int Astar(const Vector& startPos, const Vector& goal, Vector& path[], int diagonal = false)
 {
 	Vector  steps[];
 	int     costs[];
@@ -80,12 +103,12 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
 	ArrayInit(costs, 0, MAP_SIZE);
 	queueInit(pq, MAP_SIZE);
 
-	// start with priority, no way back and with no cost
+	// start with priority, with no way back and with no cost
 	queuePush(pq, 0, startPos);
 	setStep(steps, startPos, vecNULL);
 	setCost(costs, startPos, 0);
 
-	// execute A*
+	// look for the unknown
 	while(queueSize(pq)) 
 	{
 		current = queuePop(pq);
@@ -167,6 +190,30 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[]) //
 		}
 
 		current = ahead;
+	}
+
+	if(diagonal) // overkill
+	{
+	/*
+		+ = step
+		##############    ############## 
+		#  ++----+   #    #   +----+   # 
+		##++ ####++  # -> ## / #### \  # 
+		#G+    #  +-S#    #G+    #   +S# 
+		##############    ############## 
+	*/
+		int ahead = 0;
+		int behind = 0;
+		while(ahead < pIdx)
+		{
+			while(pathIsClear(tmpPath[behind], tmpPath[ahead]))
+			{
+				ahead++;
+			}
+			tmpPath[behind] = tmpPath[ahead-1];
+			behind++;
+		}
+		pIdx = behind;
 	}
 
 	// reverse the reversed path

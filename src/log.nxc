@@ -1,7 +1,7 @@
 #ifndef LOG_INC
 #define LOG_INC
 
-#define LOG_FIRST_LINE 8
+#define LOG_FIRST_LINE 6
 #define SYMBOL_HEIGHT LCD_LINE7
 
 
@@ -15,8 +15,7 @@
 static string _logLines[LOG_FIRST_LINE];
 static int _logLineNum = 0;
 
-mutex logMutex;
-
+safecall
 void logLine(const string& line)
 {
 	for(int i = _logLineNum; i > 0; i--)
@@ -27,26 +26,22 @@ void logLine(const string& line)
 	_logLines[0] = line;
 
 	int l;
-	Acquire(logMutex);
 	for(int i = 0; i < LOG_FIRST_LINE; i++) 
 	{
 		l = (8-LOG_FIRST_LINE + i)*SYMBOL_HEIGHT;
 		ClearLine(l);
 		TextOut(0, l, _logLines[i]);
 	}
-	Release(logMutex);
 
 	if(_logLineNum < LOG_FIRST_LINE-1)
 		_logLineNum++;
 }
 
+safecall
 void logLineAppend(const string& msg)
 {
 	_logLines[0] = StrCat(_logLines[0], msg);
-
-	Acquire(logMutex);
 	TextOut(0, (8-LOG_FIRST_LINE)*SYMBOL_HEIGHT, _logLines[0]);
-	Release(logMutex);
 }
 
 void logClear(int num = LOG_FIRST_LINE)

@@ -7,6 +7,7 @@
 
 #define MAP_STRIDE  14
 #define MAP_SIZE    MAP_STRIDE*MAP_STRIDE
+#define MAP_CELL_CM 250 // 250 mm 
 
 #define MAP_STRIDE_WB MAP_STRIDE-2
 #define MAP_SIZE_WB MAP_STRIDE_WB*MAP_STRIDE_WB
@@ -33,7 +34,6 @@ char mapGetCellXY(int x, int y)
 	}
 }
 
- 
 char mapGetCell(const Vector& v) 
 {
 	return mapGetCellXY(v.x, v.y);
@@ -57,21 +57,19 @@ void mapSetCell(const Vector& v, char data)
 	mapSetCellXY(v.x, v.y, data);
 }
 
+inline
 bool mapIsObstacle(char c)
 {
-//	char c = mapGetCell(x,y);
-	switch(c) {
-//	case MAP_FREE:
-	case MAP_WALL:
-		return true;
-	default:
-	}
-
-	return false;
+	return c == MAP_WALL;
 }
 
+inline
 char mapGetCellCost(char c)
 {
+	// tables are costly
+	if('0' < c && c < '9'+1)
+		return 10;
+
 	return 1;
 }
 

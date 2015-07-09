@@ -1,4 +1,7 @@
-// Events
+#ifndef EVENT_INC
+#define EVENT_INC
+
+#include "log.nxc"
 
 typedef byte Event;
 
@@ -11,10 +14,12 @@ void eventSet(Event ev)
 {
 	if(ev < _eventMax)
 		_eventState |= (1 << ev);
+	else
+		logError("eventSet", StrCat("over max:", NumToStr(ev)));
 }
 
 safecall
-bool eventIsPresent(Event ev) 
+bool eventIsSet(Event ev) 
 {
 	unsigned short s = _eventState << (_eventMax-1 - ev);
 	return s >> (_eventMax-1);
@@ -25,4 +30,8 @@ void eventClear(Event ev)
 {
 	if(ev < _eventMax)
 		_eventState ^= (0 ^ _eventState) & (1 << ev);
+	else
+		logError("eventClear", StrCat("over max:", NumToStr(ev)));
 }
+
+#endif
