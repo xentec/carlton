@@ -1,16 +1,21 @@
 #ifndef TIMER_INC
 #define TIMER_INC
 
+#include "event.nxc"
+#include "log.nxc"
+
 typedef byte Timer;
 
 struct _tmr {
-	Event event;
-	bool repeating, done;
-	unsigned long dur, end;
+	Event          event;
+	bool           repeating; // +ing, because repeat is a keyword
+	unsigned long  dur, end;
 };
+
 _tmr timers[];
 
-task timerTask();
+
+// safecalls everythere, because fatal crashes are a real nuisance
 
 void timerInit(unsigned int count)
 {
@@ -20,26 +25,43 @@ void timerInit(unsigned int count)
 safecall
 void timerSet(Timer t, int duration, Event event, bool repeating = false)
 {
+	if(t >= ArrayLen(timers)) {
+		logError("timerSet", StrCat("over max:", NumToStr(t)));
+		return;
+	}
+
 	timers[t].dur = duration;
 	timers[t].event = event;
 	timers[t].repeating = repeating;
 }
 
 safecall
-void timerStart(Timer timer)
+void timerStart(Timer t)
 {
-	timers[timer].end = CurrentTick()+timers[timer].dur;
+	if(t >= ArrayLen(timers)) {
+		logError("timerStart", StrCat("over max:", NumToStr(t)));
+		return;
+	}
+	timers[t].end = CurrentTick()+timers[t].dur;
 }
 
 safecall
-void timerCancel(Timer timer)
+void timerCancel(Timer t)
 {
-	timers[timer].end = 0;
+	if(t >= ArrayLen(timers)) {
+		logError("timerCancel", StrCat("over max:", NumToStr(t)));
+		return;
+	}
+	timers[t].end = 0;
 }
 
 safecall
 unsigned long timerRemaining(Timer t)
 {
+	if(t >= ArrayLen(timers)) {
+		logError("timerRemain", StrCat("over max:", NumToStr(t)));
+		return 0;
+	}
 	long time = timers[t].end - CurrentTick();
 	return  time > 0 ? time : 0;
 }
@@ -67,7 +89,6 @@ void timerTick()
 		}
 	}
 }
-
 
 task timerTask()
 {

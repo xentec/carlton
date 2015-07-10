@@ -7,7 +7,6 @@ typedef byte Event;
 
 static unsigned short _eventState = 0;
 static byte _eventMax = 16;
-mutex eventMutex;
 
 safecall
 void eventSet(Event ev) 

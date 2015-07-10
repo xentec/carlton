@@ -1,6 +1,17 @@
+#ifndef QUEUE_INC
+#define QUEUE_INC
+
 #include "vector.nxc"
 
-typedef Vector QueueData;
+
+/*
+	PriorityQueue (implemented with binary heap)
+
+	lower priority value means higher cance of getting out sooner
+*/
+
+
+typedef Vector QueueData; // a simple form of templates would be nice
 
 struct QueueItem
 {
@@ -17,9 +28,7 @@ struct Queue
 
 void queueInit(Queue& q, int size)
 {
-	QueueItem qi;
-
-	ArrayInit(q.list, qi, size);
+	ArrayInit(q.list, NULL, size);
 	q.count = 1;
 	q.allocated = size;
 }
@@ -40,13 +49,12 @@ void queueResize(Queue& q, int new_size)
 {
 	QueueItem newList[];
 
-	QueueItem qi;
-	ArrayInit(newList, qi, new_size);
+	ArrayInit(newList, NULL, new_size);
 
 	for(int i = 1; i < q.count; i++)
 		newList[i] = q.list[i];
 
-	ArrayInit(q.list, qi, 0);
+	ArrayInit(q.list, NULL, 0);
 
 	q.allocated = new_size;
 	q.list = newList;
@@ -61,19 +69,19 @@ void queuePush(Queue& q, int pri, QueueData& data)
 		return;
 	}
 
-	idx = q.count++;
+	idx = q.count++; // intended
 
 	while (1) 
 	{
-		parent = idx >> 1; // [.....p....i], [..p..i.....]
+		parent = idx >> 1; // [.....p....i]; [..p..i.....]
 
 		// Swap parent and child nodes until we've found 
 		// our place in the heap: parent < data < childs
 
-		if(!parent || q.list[parent].pri < pri) // [.....<.....], [..<..i.....]
+		if(!parent || q.list[parent].pri < pri) // [.....<.....]; [..<..i.....]
 			break;
 
-		q.list[idx] = q.list[parent]; // [.....^....v], [..^..v.....]
+		q.list[idx] = q.list[parent]; // [.....^....v]; [..^..v.....]
 		idx = parent;
 	}
 
@@ -84,13 +92,14 @@ void queuePush(Queue& q, int pri, QueueData& data)
 QueueData queuePop(Queue& q)
 {
 	QueueData res;
-	res = q.list[1].data;
+	res = q.list[1].data; // the result is always the highest in the heap
 
-	--q.count;
+	q.count--;
 
+	// now we need to reorder everything
 	int idx = 1, parent;
 	while (1) {
-		parent = 2 * idx;
+		parent = idx * 2;
 
 		if(parent > q.count)
 			break;
@@ -98,6 +107,7 @@ QueueData queuePop(Queue& q)
 		if (parent + 1 < q.count && q.list[parent].pri > q.list[parent + 1].pri) 
 			parent++;
 
+		// looks like the heap is ordered
 		if (q.list[q.count].pri <= q.list[parent].pri) 
 			break;
 
@@ -106,8 +116,7 @@ QueueData queuePop(Queue& q)
 	}
 
 	q.list[idx] = q.list[q.count];
-//	q.list[q.count] = QueueItem(); // NXC // optional
-	q.list[q.count] = 0; // NXC // optional
+	q.list[q.count] = 0;
 	return res;
 }
 
@@ -118,6 +127,7 @@ QueueData queueTop(Queue& q)
 
 void queueDestroy(Queue& q)
 {
-	QueueItem qi;
-	ArrayInit(q.list, qi, 0);
+	ArrayInit(q.list, NULL, 0);
 }
+
+#endif

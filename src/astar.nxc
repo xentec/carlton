@@ -1,4 +1,3 @@
-#pragma once
 
 #include "log.nxc"
 
@@ -8,7 +7,7 @@
 
 int getCost(const int& arr[], const Vector& v)
 {
-	int y = -v.y;
+	int y = -v.y; // reason for this is noted at map.nxc:25
 	if(-1 < y && y < MAP_STRIDE  &&  -1 < v.x && v.x < MAP_STRIDE)
 		return arr[y * MAP_STRIDE + v.x];
 	else {
@@ -51,8 +50,8 @@ void pathReverse(Vector& path[], unsigned int begin = NA, unsigned int length = 
 {
 	Vector swapTmp;
 	for(int b = begin != NA ? begin : 0, 
-		    e = length != NA ? b+length-1: ArrayLen(path)-1; 
-		    b < e; b++, e--) 
+			e = length != NA ? b+length-1: ArrayLen(path)-1; 
+			b < e; b++, e--) 
 	{
 		swapTmp = path[b];
 		path[b] = path[e];
@@ -86,10 +85,11 @@ bool pathIsClear(const Vector& begin, const Vector& end)
 
 int heuristic(const Vector& goal, const Vector& next)
 {
+	// since we have no diagonal ways (yet), manhattan distance is perfect
 	return abs(goal.x-next.x)+abs(goal.y-next.y);
 }
 
-int Astar(const Vector& startPos, const Vector& goal, Vector& path[], int diagonal = false)
+int Astar(const Vector& begin, const Vector& goal, Vector& path[], int diagonal = false)
 {
 	Vector  steps[];
 	int     costs[];
@@ -104,9 +104,9 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[], int diagon
 	queueInit(pq, MAP_SIZE);
 
 	// start with priority, with no way back and with no cost
-	queuePush(pq, 0, startPos);
-	setStep(steps, startPos, vecNULL);
-	setCost(costs, startPos, 0);
+	queuePush(pq, 0, begin);
+	setStep(steps, begin, vecNULL);
+	setCost(costs, begin, 0);
 
 	// look for the unknown
 	while(queueSize(pq)) 
@@ -140,6 +140,7 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[], int diagon
 			// - all other ways are (or have become) too expensive
 			if(!oldCost || oldCost > newCost)
 			{
+				// lower _newCost_ and _heuristic_ means higher priority for _next_
 				int pri = newCost + heuristic(goal, next);
 
 				queuePush(pq, pri, next);
@@ -179,7 +180,7 @@ int Astar(const Vector& startPos, const Vector& goal, Vector& path[], int diagon
 	tmpPath[pIdx] = goal;
 	current = goal;
 
-	while(!vecEq(ahead, startPos))
+	while(!vecEq(ahead, begin))
 	{
 		ahead = getStep(steps, current);
 

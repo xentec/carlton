@@ -20,42 +20,29 @@
 
 static char map[MAP_SIZE];
 
-char mapGetCellXY(int x, int y)
+char mapGetCell(Vector pos)
 {
-	y = -y;
-	if(-1 < y && y < MAP_STRIDE  &&  -1 < x && x < MAP_STRIDE)
-		return map[y * MAP_STRIDE + x];
+	// normaly y would increase in the buttom direction of the map
+	// but since we want operate in a normal cartesian grid, a invertion is necessary
+	pos.y = -pos.y;
+	if(-1 < pos.y && pos.y < MAP_STRIDE  &&  -1 < pos.x && pos.x < MAP_STRIDE)
+		return map[pos.y * MAP_STRIDE + pos.x];
 	else {
-		Vector v;
-		v.x = x;
-		v.y = y;
-		logError("getCell", vecToString(v));
+		logError("getCell", vecToString(pos));
 		return MAP_ERR;
 	}
 }
 
-char mapGetCell(const Vector& v) 
+void mapSetCell(Vector pos, char data)
 {
-	return mapGetCellXY(v.x, v.y);
-}
-
-void mapSetCellXY(int x, int y, char data)
-{
-	y = -y;
-	if(-1 < y && y < MAP_STRIDE  &&  -1 < x && x < MAP_STRIDE)
-		map[y * MAP_STRIDE + x] = data;
+	pos.y = -pos.y;
+	if(-1 < pos.y && pos.y < MAP_STRIDE  &&  -1 < pos.x && pos.x < MAP_STRIDE)
+		map[pos.y * MAP_STRIDE + pos.x] = data;
 	else{
-		Vector v;
-		v.x = x;
-		v.y = y;
-		logError("setCell", vecToString(v));
+		logError("setCell", vecToString(pos));
 	}
 }
 
-void mapSetCell(const Vector& v, char data)
-{
-	mapSetCellXY(v.x, v.y, data);
-}
 
 inline
 bool mapIsObstacle(char c)
@@ -68,7 +55,7 @@ char mapGetCellCost(char c)
 {
 	// tables are costly
 	if('0' < c && c < '9'+1)
-		return 10;
+		return 100;
 
 	return 1;
 }

@@ -68,6 +68,7 @@ int vecLengthSquared(const Vector& v)
 	return v.x*v.x + v.y*v.y;
 }
 
+// return value is signed for convinience
 float vecLength(const Vector& v)
 {
 	if(v.x == 0)
@@ -147,7 +148,7 @@ Vector vecDiv(Vector v, int b)
 Vector vecNorm(const Vector& v)
 {
 	Vector b = vecDiv(v, round(vecLength(v)));
-	return b; // try to inline it, I dare you
+	return b; // try to inline it, I dare you (may not return the correct vector)
 }
 
 int vecDot(const Vector& a, const Vector& b)
@@ -158,7 +159,7 @@ int vecDot(const Vector& a, const Vector& b)
 int vecAngle(const Vector& a, const Vector& b)
 {
 	int deg = atan2d(b.y, b.x) - atan2d(a.y, a.x);
- 	return abs(deg) > 180 ? (180 - deg) % 360 : deg; 
+	return abs(deg) > 180 ? (180 - deg) % 360 : deg; 
 }
 
 unsigned int vecHash(const Vector& v)

@@ -32,9 +32,9 @@ struct Bot
 {
 	Vector pos;
 	Vector dir;
-	int dirDegree;
+	int dirDegree; // absolute direction, 0° showing towards x+ on the grid
 
-	Vector begin;
+	Vector begin; // start position
 	PathEntry savedPaths[];
 
 	Motor motorA;
@@ -44,7 +44,7 @@ struct Bot
 void botInit(Bot& bot)
 {
 	bot.dir = BOT_START_DIR;
-	bot.dirDegree = vecAngle(vecRIGHT, bot.dir);
+	bot.dirDegree = vecAngle(vecRIGHT, bot.dir); // (vecRIGHT = 0°) calculate correct start direction
 	bot.pos = vecNULL;
 
 	bot.motorA.port = OUT_A;
@@ -57,7 +57,7 @@ void botStart(Bot& bot)
 }
 
 
-void botSavePath(Bot& bot, const Vector& begin, const Vector& end, const Vector& path[])
+void botSavePath(Bot& bot, const Vector& end, const Vector& path[])
 {
 	int len = ArrayLen(bot.savedPaths);
 	if(!len) {
@@ -66,37 +66,38 @@ void botSavePath(Bot& bot, const Vector& begin, const Vector& end, const Vector&
 	}
 
 	PathEntry peNew;
-	peNew.hash = vecHash(vecSub(end, begin));
+	peNew.hash = vecHash(vecSub(end, bot.pos));
 	peNew.path = path;
 
-	int idx = peNew.hash % len;
+	int idx = peNew.hash % len; // normalize for array
 	bool saved = false;
 	PathEntry pe;
 
-	for(int i = idx; i < len-idx; i++)
+	for(int i = idx; i < len-idx; i++) // look for empty slots after hash index
 	{
 		pe = bot.savedPaths[i];
 
-		if(pe.hash == peNew.hash)
+		if(pe.hash == peNew.hash) // already have this path, nothing to do
 			return;
 
-		if(!pe.hash) {
+		if(!pe.hash) { // found empty slot
 			bot.savedPaths[i] = peNew;
 			saved = true;
 			break;
 		}
 	}
+	// if array is full, save anyway as it's only our cache
 	if(!saved)
 		bot.savedPaths[idx] = peNew;
 }
 
-bool botHasPath(const Bot& bot, const Vector& begin, const Vector& end, Vector& path[])
+bool botHasPath(const Bot& bot, const Vector& end, Vector& path[])
 {
 	int len = ArrayLen(bot.savedPaths);
 	if(!len)
 		return false;
 
-	unsigned int hash = vecHash(vecSub(end, begin));
+	unsigned int hash = vecHash(vecSub(end, bot.pos));
  //	unsigned int hashRev = vecHash(vecSub(begin, end));
 
 	PathEntry pe;
@@ -121,26 +122,23 @@ bool botHasPath(const Bot& bot, const Vector& begin, const Vector& end, Vector& 
 }
 
 
-
-// TODO: actual moving
 void botMove(Bot& bot, const Vector& way, byte power)
 {
-	Vector goal = vecAdd(bot.pos, way);
-	int distance = MAP_CELL_CM * abs(vecLength(way));
-
+	Vector goal = vecAdd(bot.pos, way); // Get our goal position
+	int distance = MAP_CELL_CM * abs(vecLength(way)); // and the distance
 
 	logDebug( StrCat("DR:", vecToString(bot.pos), "+",vecToString(way), "=", vecToString(goal)) );
 
-#if BOT_SIMULATE	
+#if BOT_SIMULATE
 	while(!vecEq(bot.pos, goal))
 	{
-		Wait(1000/power);
-		vecAddIp(bot.pos, bot.dir);
+		Wait(5000/power);
+		vecAddIp(bot.pos, bot.dir); // go some steps... virtually
 		logDebug(StrCat(">",vecToString(bot.pos)));
 	}
 #else
-	vecAddIp(bot.pos, way);
-	Drive(distance, power);
+	vecAddIp(bot.pos, way); // update bot's position
+	Drive(distance, power); // and hope to arrive there
 #endif
 
 }
@@ -157,7 +155,7 @@ void botRotate(Bot& bot, const Vector& dir, byte power)
 #if BOT_SIMULATE
 	while(bot.dirDegree != goalDegree)
 	{
-		Wait(1000/power); 
+		Wait(500/power); 
 
 		bot.dirDegree += inc;
 		if(bot.dirDegree % 10 == 0 || bot.dirDegree == degree)
@@ -168,7 +166,7 @@ void botRotate(Bot& bot, const Vector& dir, byte power)
 	Rotate(degree, power);
 #endif
 
-	bot.dirDegree %= 360;
+	bot.dirDegree %= 360; // let's keep it in the boundaries of math and int range
 	bot.dir = dir;
 }
 // ################
@@ -178,31 +176,38 @@ void botRun(Bot& bot, const Vector& path[])
 	Vector rel, norm;
 	int len = ArrayLen(path);
 
+	// let's get the show on the road
 	int i;
-	for(i = 0; i < len-1; i++) 
+	for(i = 0; i < len-1; i++) // stop before last point
 	{
-		logDebug( StrCat("MV:", vecToString(bot.pos),"->", vecToString(path[i])) );
-
 		rel = vecSub(path[i], bot.pos);
 		norm = vecNorm(rel);
 
-		logDebug( StrCat("REL:", vecToString(rel)," NRM:", vecToString(norm)) );
+		logDebug( StrCat("MV:", vecToString(bot.pos),"->", vecToString(path[i])) );
+		logDebug( StrCat(" REL:", vecToString(rel)," NRM:", vecToString(norm)) );
 
+		// face the right direction
 		if(!vecEq(bot.dir, norm)) 
 			botRotate(bot, norm, BOT_MIN_POWER);
 
 		botMove(bot, rel, BOT_MIN_POWER);
 	}
 
+	// when facing the last point.. (i = len-1)
 	rel = vecSub(path[i], bot.pos);
 	norm = vecNorm(rel);
 	if(!vecEq(bot.dir, norm)) 
 		botRotate(bot, norm, BOT_MIN_POWER);
 
-	if(!vecEq(path[i], bot.begin))
-		return;
+	// ..check wether it's the start position or has the length longer than 1
+	// and if so
+	if(vecEq(path[i], bot.begin) || abs(vecLength(rel)) > 1)
+	{
+		if(!vecEq(path[i], bot.begin)) // if goal is a table, 
+			vecSubIp(rel, bot.dir);    // stop in front of it
 
-	botMove(bot, rel, BOT_MIN_POWER);
+		botMove(bot, rel, BOT_MIN_POWER);
+	}
 }
 
 #endif // BOT_INC
